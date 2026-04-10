@@ -1,12 +1,12 @@
 import { useParams, Link } from 'react-router-dom';
-import { 
-  ChevronRight, 
-  User, 
-  MapPin, 
-  Clock, 
-  Pencil, 
-  Download, 
-  CalendarDays, 
+import {
+  ChevronRight,
+  User,
+  MapPin,
+  Clock,
+  Pencil,
+  Download,
+  CalendarDays,
   MoreVertical
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -16,7 +16,7 @@ import { DUMMY_COURSES, DUMMY_STUDENTS, DUMMY_TEACHERS } from '../data/dummy';
 export const CourseDetails = () => {
   const { id } = useParams();
   const course = DUMMY_COURSES.find(c => c.id === id);
-  
+
   if (!course) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -77,7 +77,7 @@ export const CourseDetails = () => {
       {/* Navigation Tabs */}
       <div className="flex items-center gap-8 border-b border-slate-800/50 pb-px">
         {['Overview', 'Students', 'Schedule', 'Attendance'].map((tab, i) => (
-          <button 
+          <button
             key={tab}
             className={cn(
               "pb-4 text-xs font-black uppercase tracking-widest italic transition-colors relative",
@@ -94,7 +94,7 @@ export const CourseDetails = () => {
 
       {/* Bento Grid Top Row */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* Enrolled Students Card */}
         <Card className="lg:col-span-3 p-6 flex flex-col justify-center relative overflow-hidden group">
           <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors"></div>
@@ -103,11 +103,11 @@ export const CourseDetails = () => {
             <span className="text-5xl font-black text-white tracking-tighter italic leading-none">{course.student_count}</span>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 italic">Total Active</span>
           </div>
-          
+
           <div className="flex -space-x-2">
-            {[1,2,3,4].map((i) => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center overflow-hidden z-10">
-                <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="avatar" className="w-full h-full object-cover" />
+                <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="avatar" className="w-full h-full object-cover" />
               </div>
             ))}
             <div className="w-8 h-8 rounded-full bg-indigo-500/10 border-2 border-slate-900 flex items-center justify-center text-[9px] font-black text-indigo-400 z-0 italic">
@@ -119,17 +119,17 @@ export const CourseDetails = () => {
         {/* Attendance Rate */}
         <Card className="lg:col-span-3 p-6 flex flex-col items-center justify-center text-center group">
           <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic mb-6 w-full text-left">Attendance Rate</h3>
-          
+
           <div className="relative w-32 h-32 mb-6">
             <svg className="w-full h-full transform -rotate-90 pointer-events-none">
               <circle cx="64" cy="64" r="56" className="stroke-slate-800/50" strokeWidth="12" fill="none" />
-              <circle 
-                cx="64" 
-                cy="64" 
-                r="56" 
-                className="stroke-indigo-500 transition-all duration-1000 ease-out" 
-                strokeWidth="12" 
-                fill="none" 
+              <circle
+                cx="64"
+                cy="64"
+                r="56"
+                className="stroke-indigo-500 transition-all duration-1000 ease-out"
+                strokeWidth="12"
+                fill="none"
                 strokeDasharray={`${2 * Math.PI * 56}`}
                 strokeDashoffset={`${2 * Math.PI * 56 * (1 - course.attendance_rate / 100)}`}
                 strokeLinecap="round"
@@ -140,7 +140,7 @@ export const CourseDetails = () => {
               <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest italic">Average</span>
             </div>
           </div>
-          
+
           <p className="text-[10px] font-bold text-emerald-400 italic">Above Institutional average (82%)</p>
         </Card>
 
@@ -156,25 +156,25 @@ export const CourseDetails = () => {
           <div className="space-y-3">
             {recentSessions.map((session, i) => (
               <div key={i} className="flex items-center justify-between p-4 bg-slate-900/50 border border-slate-800/50 rounded-xl hover:bg-slate-800/30 transition-colors">
-                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700 text-slate-400">
-                      <CalendarDays size={18} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-white italic">{session.date}</p>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{session.title}</p>
-                    </div>
-                 </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700 text-slate-400">
+                    <CalendarDays size={18} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white italic">{session.date}</p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{session.title}</p>
+                  </div>
+                </div>
 
-                 <div className="flex items-center gap-8">
-                    <div className="text-right">
-                      <p className="text-xs font-black text-white italic">{session.attendance}</p>
-                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Present</p>
-                    </div>
-                    <Badge variant={session.status === 'COMPLETED' ? 'indigo' : 'info'} className="text-[9px] w-24 flex justify-center py-1.5 shadow-inner">
-                      {session.status}
-                    </Badge>
-                 </div>
+                <div className="flex items-center gap-8">
+                  <div className="text-right">
+                    <p className="text-xs font-black text-white italic">{session.attendance}</p>
+                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Present</p>
+                  </div>
+                  <Badge variant={session.status === 'COMPLETED' ? 'indigo' : 'info'} className="text-[9px] w-24 flex justify-center py-1.5 shadow-inner">
+                    {session.status}
+                  </Badge>
+                </div>
               </div>
             ))}
           </div>
@@ -186,8 +186,8 @@ export const CourseDetails = () => {
         <div className="p-6 flex justify-between items-center border-b border-slate-800/50">
           <h3 className="text-lg font-bold text-white tracking-tight italic">Student Performance Preview</h3>
           <div className="flex items-center gap-2 text-slate-400">
-             <button className="w-8 h-8 flex items-center justify-center hover:text-white transition-colors bg-slate-900 border border-slate-800 rounded-lg"><ChevronRight size={14} className="rotate-90" /></button>
-             <button className="w-8 h-8 flex items-center justify-center hover:text-white transition-colors bg-slate-900 border border-slate-800 rounded-lg"><MoreVertical size={14} /></button>
+            <button className="w-8 h-8 flex items-center justify-center hover:text-white transition-colors bg-slate-900 border border-slate-800 rounded-lg"><ChevronRight size={14} className="rotate-90" /></button>
+            <button className="w-8 h-8 flex items-center justify-center hover:text-white transition-colors bg-slate-900 border border-slate-800 rounded-lg"><MoreVertical size={14} /></button>
           </div>
         </div>
 
@@ -208,7 +208,7 @@ export const CourseDetails = () => {
                 <tr key={student.id} className="hover:bg-slate-800/20 transition-colors group">
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
-                      <img src={student.photo || `https://i.pravatar.cc/100?img=${i+20}`} alt={student.name} className="w-8 h-8 rounded-full border border-slate-700 bg-slate-800" />
+                      <img src={student.photo || `https://i.pravatar.cc/100?img=${i + 20}`} alt={student.name} className="w-8 h-8 rounded-full border border-slate-700 bg-slate-800" />
                       <div>
                         <p className="text-xs font-bold text-white italic group-hover:text-indigo-400 transition-colors">{student.name}</p>
                       </div>
@@ -223,20 +223,20 @@ export const CourseDetails = () => {
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3 w-32">
                       <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <div 
-                           className={cn(
-                             "h-full rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]",
-                             student.attendance_rate < 50 ? "bg-rose-500" : student.attendance_rate < 80 ? "bg-amber-500" : "bg-indigo-500"
-                           )} 
-                           style={{ width: `${student.attendance_rate}%` }} 
+                        <div
+                          className={cn(
+                            "h-full rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]",
+                            student.attendance_rate < 50 ? "bg-rose-500" : student.attendance_rate < 80 ? "bg-amber-500" : "bg-indigo-500"
+                          )}
+                          style={{ width: `${student.attendance_rate}%` }}
                         />
                       </div>
                       <span className="text-[10px] font-black text-white italic">{student.attendance_rate}%</span>
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <Badge 
-                      variant={student.attendance_rate < 50 ? 'danger' : student.attendance_rate < 80 ? 'warning' : 'success'} 
+                    <Badge
+                      variant={student.attendance_rate < 50 ? 'danger' : student.attendance_rate < 80 ? 'warning' : 'success'}
                       className="text-[8px] py-1 px-2.5 shadow-inner"
                     >
                       {student.attendance_rate < 50 ? 'AT RISK' : student.attendance_rate < 80 ? 'CONSISTENT' : 'EXCELLENT'}
@@ -249,13 +249,13 @@ export const CourseDetails = () => {
                   </td>
                 </tr>
               ))}
-              
+
               {/* Optional Empty State if no students */}
               {enrolledStudents.length === 0 && (
                 <tr>
-                   <td colSpan={6} className="py-8 text-center text-slate-500 text-xs italic">
-                      No students enrolled yet.
-                   </td>
+                  <td colSpan={6} className="py-8 text-center text-slate-500 text-xs italic">
+                    No students enrolled yet.
+                  </td>
                 </tr>
               )}
             </tbody>

@@ -6,7 +6,8 @@ import { AdminLayout } from './components/AdminLayout';
 import { TeacherLayout } from './components/TeacherLayout';
 
 // Pages
-import { LoginPage, SignupPage } from './pages/Auth';
+import { LoginPage } from './pages/auth/login';
+import { SignupPage } from './pages/auth/signUp';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { TeacherDashboard } from './pages/TeacherDashboard';
 import { Analytics } from './pages/Analytics';
@@ -20,6 +21,7 @@ import { AddCourse } from './pages/AddCourse';
 import { Teachers } from './pages/Teachers';
 import { StudentProfile } from './pages/StudentProfile';
 import { BiometricEnrollment } from './pages/BiometricEnrollment';
+import { ClassDetails } from './pages/ClassDetails';
 
 // --- APP ROOT ---
 export default function App() {
@@ -61,6 +63,7 @@ export default function App() {
         
         {/* Teacher Node Infrastructure */}
         <Route path="/teacher" element={<TeacherLayout><TeacherDashboard /></TeacherLayout>} />
+        <Route path="/teacher/class/:id" element={<TeacherLayout><ClassDetails /></TeacherLayout>} />
         <Route path="/teacher/courses" element={<TeacherLayout><SessionManifest /></TeacherLayout>} />
         <Route path="/teacher/attendance" element={<TeacherLayout><TeacherDashboard /></TeacherLayout>} />
         <Route path="/teacher/reports" element={<TeacherLayout><Analytics /></TeacherLayout>} />

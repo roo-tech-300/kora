@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -169,5 +170,21 @@ export const Select = ({ label, children, error, className, ...props }: any) => 
       </div>
     </div>
     {error && <p className="text-[10px] font-bold text-rose-500 ml-1 italic">{error}</p>}
+  </div>
+);
+
+export const Spinner = ({ size = 24, className }: { size?: number, className?: string }) => (
+  <Loader2 size={size} className={cn("animate-spin text-indigo-500", className)} />
+);
+
+export const LoadingScreen = ({ message = "Initializing Systems..." }: { message?: string }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xl">
+    <div className="flex flex-col items-center justify-center p-12 glass-card shadow-[0_0_100px_rgba(99,102,241,0.15)] border border-indigo-500/10 rounded-[3rem]">
+      <div className="relative mb-6">
+        <div className="absolute inset-0 bg-indigo-500 rounded-full blur-[30px] opacity-20 animate-pulse-slow"></div>
+        <Loader2 size={48} className="animate-spin text-indigo-400 relative z-10" />
+      </div>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic">{message}</p>
+    </div>
   </div>
 );

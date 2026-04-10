@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { 
-  Users, 
-  BookOpen, 
-  PieChart, 
-  Settings, 
-  LogOut, 
-  LayoutDashboard, 
-  Fingerprint, 
+import {
+  Users,
+  BookOpen,
+  PieChart,
+  Settings,
+  LogOut,
+  LayoutDashboard,
+  Fingerprint,
   Search,
   Bell,
   User
@@ -43,7 +43,7 @@ export const AdminLayout = ({ children }: any) => {
           <NavItem label="Dashboard" icon={LayoutDashboard} href="/admin" active={pathname === '/admin'} />
           <NavItem label="Students" icon={Users} href="/admin/students" active={pathname.startsWith('/admin/students')} />
           <NavItem label="Courses" icon={BookOpen} href="/admin/courses" active={pathname.startsWith('/admin/courses')} />
-          <NavItem label="Lecturers" icon={User} href="/admin/teachers" active={pathname.startsWith('/admin/teachers')} />
+          <NavItem label="Teachers" icon={User} href="/admin/teachers" active={pathname.startsWith('/admin/teachers')} />
           <NavItem label="Reports" icon={PieChart} href="/admin/reports" active={pathname.startsWith('/admin/reports')} />
           <NavItem label="Settings" icon={Settings} href="/admin/settings" active={pathname === '/admin/settings'} />
         </nav>
@@ -70,15 +70,15 @@ export const AdminLayout = ({ children }: any) => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <div className="absolute inset-0 mesh-gradient opacity-40 pointer-events-none"></div>
-        
+
         {/* Top Header */}
         <header className="h-20 bg-slate-950/50 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-8 shrink-0 relative z-10">
           <div className="flex-1 max-w-xl">
             <div className="relative group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400 transition-colors" size={20} />
-              <input 
-                type="text" 
-                placeholder="Search students, teachers, or courses..." 
+              <input
+                type="text"
+                placeholder="Search students, teachers, or classes..."
                 className="w-full h-11 bg-slate-900/50 border border-slate-800 rounded-xl pl-12 pr-4 text-sm font-medium text-slate-200 placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/20 focus:bg-slate-900 transition-all outline-none"
               />
             </div>
@@ -89,7 +89,7 @@ export const AdminLayout = ({ children }: any) => {
               <Link to="/admin/courses" className="text-sm font-bold text-slate-400 hover:text-indigo-400 transition-colors italic uppercase tracking-wider">My Courses</Link>
               <Link to="/admin/reports" className="text-sm font-bold text-slate-400 hover:text-indigo-400 transition-colors italic uppercase tracking-wider">Reports</Link>
             </nav>
-            
+
             <Link to="/kiosk" className="bg-white text-slate-950 px-6 py-2.5 rounded-xl text-sm font-black hover:bg-slate-200 transition-all shadow-xl shadow-white/5 active:scale-95 uppercase tracking-tighter">
               Check In
             </Link>
