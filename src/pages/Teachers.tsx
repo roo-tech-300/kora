@@ -19,34 +19,28 @@ export const Teachers = () => {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
         <div>
            <Badge variant="indigo">Staff Infrastructure</Badge>
-           <h1 className="text-3xl font-bold text-white tracking-tight mt-2 italic leading-none uppercase">Faculty <span className="text-indigo-400">Leads</span></h1>
+           <h1 className="text-3xl font-bold text-white tracking-tight mt-2 italic leading-none uppercase">Lecturers</h1>
            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1.5 italic">Institutional Technical Lead Management</p>
         </div>
         
         <div className="flex items-center gap-4">
           <button className="h-11 px-6 bg-indigo-600 rounded-xl text-xs font-black text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-900/20 flex items-center gap-2 uppercase tracking-tighter italic">
-              <Plus size={16} /> New Faculty Lead
+              <Plus size={16} /> New Lecturer
           </button>
         </div>
       </div>
 
-      {/* Stats HUD */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-         <StatCard label="Total Leads" value={DUMMY_TEACHERS.length.toString()} trend="Full Departmental Strength" icon={Users} variant="indigo" />
-         <StatCard label="Departmental Reach" value="Physics, Math, History" trend="+2 New Depts" icon={Award} variant="purple" />
-         <StatCard label="Expert Coverage" value="98%" trend="Optimal Resource Sync" icon={ShieldCheck} variant="green" />
-         <StatCard label="Live Mesh Nodes" value="44" trend="Active Lab Access" icon={Zap} variant="indigo" />
-      </div>
+    
 
       {/* Main Inventory Table */}
-      <Card title="Faculty Manifest" subtitle="Full scale technical lead registry" className="overflow-hidden">
+      <Card title="Department Overview" className="overflow-hidden">
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-800/50 bg-slate-900/20">
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Identity</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Expertise</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Segment Load</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Courses Assigned</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Status</th>
                 <th className="px-6 py-4"></th>
               </tr>
@@ -84,13 +78,8 @@ export const Teachers = () => {
                     </div>
                   </td>
                   <td className="px-6 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-slate-950 rounded-lg shadow-inner">
-                        <BookOpen size={14} className="text-indigo-400" />
-                      </div>
-                      <span className="text-[11px] font-black text-white italic tracking-tighter uppercase whitespace-nowrap">
-                        {teacher.assigned_classes.length} Academic Segments
-                      </span>
+                    <div className="flex items-center justify-center gap-3 text-[11px] font-black text-white italic tracking-tighter uppercase whitespace-nowrap">
+                        {teacher.assigned_courses.length}
                     </div>
                   </td>
                   <td className="px-6 py-5">

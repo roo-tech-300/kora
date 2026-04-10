@@ -10,12 +10,13 @@ import { LoginPage, SignupPage } from './pages/Auth';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { TeacherDashboard } from './pages/TeacherDashboard';
 import { Analytics } from './pages/Analytics';
-import { ClassManifest } from './pages/ClassManifest';
+import { SessionManifest } from './pages/SessionManifest';
 import { KioskMode } from './pages/KioskMode';
 import { Students } from './pages/Students';
 import { AddStudent } from './pages/AddStudent';
-import { Classes } from './pages/Classes';
-import { ClassDetails } from './pages/ClassDetails';
+import { Courses } from './pages/Courses';
+import { CourseDetails } from './pages/CourseDetails';
+import { AddCourse } from './pages/AddCourse';
 import { Teachers } from './pages/Teachers';
 import { StudentProfile } from './pages/StudentProfile';
 import { BiometricEnrollment } from './pages/BiometricEnrollment';
@@ -51,15 +52,16 @@ export default function App() {
         <Route path="/admin/students/:id" element={<AdminLayout><StudentProfile /></AdminLayout>} />
         <Route path="/admin/students/:id/enroll" element={<AdminLayout><BiometricEnrollment /></AdminLayout>} />
         <Route path="/admin/students/new" element={<AdminLayout><AddStudent /></AdminLayout>} />
-        <Route path="/admin/classes" element={<AdminLayout><Classes /></AdminLayout>} />
-        <Route path="/admin/classes/:id" element={<AdminLayout><ClassDetails /></AdminLayout>} />
+        <Route path="/admin/courses" element={<AdminLayout><Courses /></AdminLayout>} />
+        <Route path="/admin/courses/new" element={<AdminLayout><AddCourse /></AdminLayout>} />
+        <Route path="/admin/courses/:id" element={<AdminLayout><CourseDetails /></AdminLayout>} />
         <Route path="/admin/teachers" element={<AdminLayout><Teachers /></AdminLayout>} />
         <Route path="/admin/reports" element={<AdminLayout><Analytics /></AdminLayout>} />
         <Route path="/admin/settings" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
         
         {/* Teacher Node Infrastructure */}
         <Route path="/teacher" element={<TeacherLayout><TeacherDashboard /></TeacherLayout>} />
-        <Route path="/teacher/classes" element={<TeacherLayout><ClassManifest /></TeacherLayout>} />
+        <Route path="/teacher/courses" element={<TeacherLayout><SessionManifest /></TeacherLayout>} />
         <Route path="/teacher/attendance" element={<TeacherLayout><TeacherDashboard /></TeacherLayout>} />
         <Route path="/teacher/reports" element={<TeacherLayout><Analytics /></TeacherLayout>} />
         <Route path="/teacher/settings" element={<TeacherLayout><TeacherDashboard /></TeacherLayout>} />

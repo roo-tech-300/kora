@@ -122,14 +122,14 @@ export const Students = () => {
                   <td className="px-6 py-5">
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-bold text-white italic">{student.level} Level</span>
-                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">Academic Seg {student.class_id}</p>
+                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">Course ID {student.course_id}</p>
                     </div>
                   </td>
                   <td className="px-6 py-5">
                     {student.fingerprint_enrolled ? (
                       <Badge variant="success" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">ENROLLED</Badge>
                     ) : (
-                      <Badge variant="purple" className="bg-amber-500/10 text-amber-500 border-amber-500/20">PENDING</Badge>
+                      <Badge variant="warning" className="bg-amber-500/10 text-amber-500 border-amber-500/20">PENDING</Badge>
                     )}
                   </td>
                   <td className="px-6 py-5">

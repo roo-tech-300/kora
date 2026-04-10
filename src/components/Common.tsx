@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const Badge = ({ children, variant = 'info', className }: { children: React.ReactNode, variant?: string, className?: string }) => {
+export const Badge = ({ children, variant = 'info', className, ...props }: { children: React.ReactNode, variant?: string, className?: string, [key: string]: any }) => {
   const styles: any = {
     info: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     success: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -17,7 +17,7 @@ export const Badge = ({ children, variant = 'info', className }: { children: Rea
     indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
   };
   return (
-    <span className={cn("inline-block text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-lg border", styles[variant] || styles.info, className)}>
+    <span {...props} className={cn("inline-block text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-lg border", styles[variant] || styles.info, className)}>
       {children}
     </span>
   );
@@ -47,8 +47,8 @@ export const NavItem = ({ icon: Icon, label, href, active, count }: any) => (
   </Link>
 );
 
-export const Card = ({ children, className, title, subtitle, icon: Icon, action }: any) => (
-  <div className={cn("bg-slate-900/50 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-6 flex flex-col h-full shadow-2xl shadow-black/20 hover:border-slate-700/50 transition-colors", className)}>
+export const Card = ({ children, className, title, subtitle, icon: Icon, action, ...props }: any) => (
+  <div {...props} className={cn("bg-slate-900/50 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-6 flex flex-col h-full shadow-2xl shadow-black/20 hover:border-slate-700/50 transition-colors", className)}>
     {(title || Icon) && (
       <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-4">

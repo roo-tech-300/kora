@@ -11,22 +11,22 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn, Badge, Card } from '../components/Common';
-import { DUMMY_CLASSES, DUMMY_STUDENTS, DUMMY_TEACHERS } from '../data/dummy';
+import { DUMMY_COURSES, DUMMY_STUDENTS, DUMMY_TEACHERS } from '../data/dummy';
 
-export const ClassDetails = () => {
+export const CourseDetails = () => {
   const { id } = useParams();
-  const cls = DUMMY_CLASSES.find(c => c.id === id);
+  const course = DUMMY_COURSES.find(c => c.id === id);
   
-  if (!cls) {
+  if (!course) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-slate-400">Class not found</p>
+        <p className="text-slate-400">Course not found</p>
       </div>
     );
   }
 
-  const teacher = DUMMY_TEACHERS.find(t => t.id === cls.teacher_id);
-  const enrolledStudents = DUMMY_STUDENTS.filter(s => s.class_id === cls.id);
+  const teacher = DUMMY_TEACHERS.find(t => t.id === course.teacher_id);
+  const enrolledStudents = DUMMY_STUDENTS.filter(s => s.course_id === course.id);
 
   // Static recent sessions for Demo
   const recentSessions = [
@@ -39,15 +39,15 @@ export const ClassDetails = () => {
     <div className="space-y-8 animate-in pb-20">
       {/* Breadcrumbs */}
       <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest italic">
-        <Link to="/admin/classes" className="text-slate-500 hover:text-indigo-400 transition-colors">Classes</Link>
+        <Link to="/admin/courses" className="text-slate-500 hover:text-indigo-400 transition-colors">Courses</Link>
         <ChevronRight size={12} className="text-slate-600" />
-        <span className="text-white">{cls.name}</span>
+        <span className="text-white">{course.name}</span>
       </div>
 
       {/* Header section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
         <div>
-          <h1 className="text-4xl font-bold text-white tracking-tight italic leading-none">{cls.name}</h1>
+          <h1 className="text-4xl font-bold text-white tracking-tight italic leading-none">{course.name}</h1>
           <div className="flex flex-wrap items-center gap-6 mt-4 text-[11px] font-bold text-slate-400 italic">
             <div className="flex items-center gap-2">
               <User size={14} className="text-indigo-500/70" />
@@ -55,11 +55,11 @@ export const ClassDetails = () => {
             </div>
             <div className="flex items-center gap-2">
               <MapPin size={14} className="text-indigo-500/70" />
-              <span className="uppercase">{cls.room}</span>
+              <span className="uppercase">{course.room}</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock size={14} className="text-indigo-500/70" />
-              <span>{cls.schedule}</span>
+              <span>{course.schedule}</span>
             </div>
           </div>
         </div>
@@ -76,7 +76,7 @@ export const ClassDetails = () => {
 
       {/* Navigation Tabs */}
       <div className="flex items-center gap-8 border-b border-slate-800/50 pb-px">
-        {['Overview', 'Students', 'Sessions', 'Attendance'].map((tab, i) => (
+        {['Overview', 'Students', 'Schedule', 'Attendance'].map((tab, i) => (
           <button 
             key={tab}
             className={cn(
@@ -100,7 +100,7 @@ export const ClassDetails = () => {
           <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors"></div>
           <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic mb-4">Enrolled Students</h3>
           <div className="flex items-end gap-3 mb-6">
-            <span className="text-5xl font-black text-white tracking-tighter italic leading-none">{cls.student_count}</span>
+            <span className="text-5xl font-black text-white tracking-tighter italic leading-none">{course.student_count}</span>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 italic">Total Active</span>
           </div>
           
@@ -111,7 +111,7 @@ export const ClassDetails = () => {
               </div>
             ))}
             <div className="w-8 h-8 rounded-full bg-indigo-500/10 border-2 border-slate-900 flex items-center justify-center text-[9px] font-black text-indigo-400 z-0 italic">
-              +{Math.max(0, cls.student_count - 4)}
+              +{Math.max(0, course.student_count - 4)}
             </div>
           </div>
         </Card>
@@ -131,12 +131,12 @@ export const ClassDetails = () => {
                 strokeWidth="12" 
                 fill="none" 
                 strokeDasharray={`${2 * Math.PI * 56}`}
-                strokeDashoffset={`${2 * Math.PI * 56 * (1 - cls.attendance_rate / 100)}`}
+                strokeDashoffset={`${2 * Math.PI * 56 * (1 - course.attendance_rate / 100)}`}
                 strokeLinecap="round"
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-black text-white tracking-tighter italic">{cls.attendance_rate}%</span>
+              <span className="text-3xl font-black text-white tracking-tighter italic">{course.attendance_rate}%</span>
               <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest italic">Average</span>
             </div>
           </div>

@@ -18,7 +18,7 @@ import {
   Tooltip as RechartsTooltip 
 } from 'recharts';
 import { motion } from 'framer-motion';
-import { DUMMY_STUDENTS, DUMMY_CLASSES } from '../data/dummy';
+import { DUMMY_STUDENTS, DUMMY_COURSES } from '../data/dummy';
 import { Badge, Card } from '../components/Common';
 
 const ATTENDANCE_HISTORY = [
@@ -33,17 +33,17 @@ const ATTENDANCE_HISTORY = [
 ];
 
 const RECENT_SESSIONS = [
-  { class: 'Math 10A', date: 'May 24, 2024', status: 'present', method: 'Fingerprint' },
-  { class: 'Physics 11C', date: 'May 23, 2024', status: 'present', method: 'Fingerprint' },
-  { class: 'Math 10A', date: 'May 22, 2024', status: 'absent', method: '—' },
-  { class: 'Literature 09', date: 'May 21, 2024', status: 'present', method: 'Fingerprint' },
-  { class: 'Chemistry 10B', date: 'May 20, 2024', status: 'present', method: 'Manual' },
+  { course: 'Math 10A', date: 'May 24, 2024', status: 'present', method: 'Fingerprint' },
+  { course: 'Physics 11C', date: 'May 23, 2024', status: 'present', method: 'Fingerprint' },
+  { course: 'Math 10A', date: 'May 22, 2024', status: 'absent', method: '—' },
+  { course: 'Literature 09', date: 'May 21, 2024', status: 'present', method: 'Fingerprint' },
+  { course: 'Chemistry 10B', date: 'May 20, 2024', status: 'present', method: 'Manual' },
 ];
 
 export const StudentProfile = () => {
   const { id } = useParams();
   const student = DUMMY_STUDENTS.find(s => s.id === id) || DUMMY_STUDENTS[0];
-  const cls = DUMMY_CLASSES.find(c => c.id === student.class_id);
+  const course = DUMMY_COURSES.find(c => c.id === student.course_id);
 
   const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
 
@@ -87,7 +87,7 @@ export const StudentProfile = () => {
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-slate-500 font-bold uppercase tracking-widest text-[10px] italic">
             <span className="flex items-center gap-2">Level {student.level}</span>
             <span className="w-1.5 h-1.5 bg-slate-800 rounded-full"></span>
-            <span className="flex items-center gap-2">{cls?.name}</span>
+            <span className="flex items-center gap-2">{course?.name}</span>
             <span className="w-1.5 h-1.5 bg-slate-800 rounded-full"></span>
             <span className="flex items-center gap-2">ID: {student.id.padStart(4, '0')}</span>
           </div>
@@ -181,7 +181,7 @@ export const StudentProfile = () => {
           </Card>
 
           <Card 
-            title="Recent Session History" 
+            title="Recent Class Sessions" 
             subtitle="Raw biometric log decryption"
             action={<button className="text-[10px] font-black text-slate-500 hover:text-indigo-400 uppercase tracking-widest transition-all italic flex items-center gap-2">View Full Log <ChevronRight size={14} /></button>}
           >
@@ -189,7 +189,7 @@ export const StudentProfile = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-800/50 bg-slate-900/10">
-                    <th className="px-6 py-4 text-[9px] font-black text-slate-600 uppercase tracking-widest italic">Class Identity</th>
+                    <th className="px-6 py-4 text-[9px] font-black text-slate-600 uppercase tracking-widest italic">Course Identity</th>
                     <th className="px-6 py-4 text-[9px] font-black text-slate-600 uppercase tracking-widest italic text-center">Protocol Date</th>
                     <th className="px-6 py-4 text-[9px] font-black text-slate-600 uppercase tracking-widest italic text-center">Status</th>
                     <th className="px-6 py-4 text-[9px] font-black text-slate-600 uppercase tracking-widest italic text-right">Method</th>
@@ -205,7 +205,7 @@ export const StudentProfile = () => {
                       className="group hover:bg-slate-900/40 transition-colors"
                     >
                       <td className="px-6 py-5">
-                        <p className="text-sm font-bold text-white italic group-hover:text-indigo-400 transition-colors">{session.class}</p>
+                        <p className="text-sm font-bold text-white italic group-hover:text-indigo-400 transition-colors">{session.course}</p>
                       </td>
                       <td className="px-6 py-5 text-center">
                         <p className="text-[10px] font-bold text-slate-500 italic">{session.date}</p>

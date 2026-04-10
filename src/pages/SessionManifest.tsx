@@ -6,16 +6,16 @@ import {
   Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DUMMY_STUDENTS, DUMMY_CLASSES } from '../data/dummy';
+import { DUMMY_STUDENTS, DUMMY_COURSES } from '../data/dummy';
 import { Badge, Card, cn, Tooltip } from '../components/Common';
 
-export const ClassManifest = () => {
+export const SessionManifest = () => {
     return (
         <div className="space-y-10 animate-in">
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div>
                    <Badge variant="indigo">Departmental Intelligence</Badge>
-                   <h2 className="text-3xl font-bold text-white tracking-tight mt-2 italic leading-tight uppercase">Class <span className="text-indigo-400">Manifests</span></h2>
+                   <h2 className="text-3xl font-bold text-white tracking-tight mt-2 italic leading-tight uppercase">Session <span className="text-indigo-400">Manifests</span></h2>
                    <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1.5 italic">Real-time attendance node allocation</p>
                 </div>
                 <div className="flex gap-4">
@@ -30,8 +30,8 @@ export const ClassManifest = () => {
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
-                {DUMMY_CLASSES.map((cls) => (
-                    <Card key={cls.id} className="hover:border-indigo-500/30 group relative overflow-hidden transition-all duration-500">
+                {DUMMY_COURSES.map((course) => (
+                    <Card key={course.id} className="hover:border-indigo-500/30 group relative overflow-hidden transition-all duration-500">
                         <div className="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/5 blur-[80px] rounded-full group-hover:bg-indigo-500/10 transition-colors"></div>
                         
                         <div className="flex justify-between items-start mb-8 relative z-10">
@@ -39,15 +39,15 @@ export const ClassManifest = () => {
                                <div className="flex items-center gap-4">
                                   <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl shadow-xl group-hover:scale-110 transition-transform"><Zap size={24} /></div>
                                   <div>
-                                     <h3 className="text-xl font-bold text-white italic tracking-tight group-hover:text-indigo-400 transition-all">{cls.name}</h3>
+                                     <h3 className="text-xl font-bold text-white italic tracking-tight group-hover:text-indigo-400 transition-all">{course.name}</h3>
                                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 italic flex items-center gap-1.5">
-                                        <MapPin size={12} className="text-indigo-500" /> {cls.room}
+                                        <MapPin size={12} className="text-indigo-500" /> {course.room}
                                      </p>
                                   </div>
                                </div>
                             </div>
                             <div className="text-right">
-                               <p className="text-2xl font-black text-white italic tracking-tighter leading-none">{cls.student_count}</p>
+                               <p className="text-2xl font-black text-white italic tracking-tighter leading-none">{course.student_count}</p>
                                <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic mt-1">Total Nodes</p>
                             </div>
                         </div>
@@ -60,7 +60,7 @@ export const ClassManifest = () => {
                                            <img src={student.photo} className="w-11 h-11 rounded-xl object-cover ring-2 ring-indigo-500/5 group-hover/item:scale-105 transition-transform shadow-2xl" alt="" />
                                            <div className="min-w-0">
                                               <Tooltip content={student.name} className="min-w-0">
-                                                 <p className="text-sm font-bold text-white italic group-hover/item:text-indigo-300 transition-colors truncate italic leading-none">{student.name}</p>
+                                                 <p className="text-sm font-bold text-white italic group-hover/item:text-indigo-300 transition-colors truncate leading-none">{student.name}</p>
                                               </Tooltip>
                                               <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-2 italic">Institutional Verify</p>
                                            </div>
@@ -90,10 +90,10 @@ export const ClassManifest = () => {
                                      <img key={i} src={s.photo} className="w-8 h-8 rounded-lg object-cover border-2 border-slate-950 shadow-lg ring-1 ring-slate-800/50" alt="" />
                                   ))}
                                </div>
-                               <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest italic">{cls.student_count - 4} more nodes</span>
+                               <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest italic">{course.student_count - 4} more nodes</span>
                             </div>
                             <button className="flex items-center gap-2 text-[10px] font-black text-indigo-400 hover:text-white uppercase tracking-widest transition-all group italic underline-offset-4 hover:underline">
-                               EXPAND MANIFEST <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                EXPAND MANIFEST <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                             </button>
                         </div>
                     </Card>

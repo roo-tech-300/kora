@@ -9,12 +9,12 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { DUMMY_STUDENTS, DUMMY_CLASSES } from '../data/dummy';
+import { DUMMY_STUDENTS, DUMMY_COURSES } from '../data/dummy';
 import { cn, Badge } from '../components/Common';
 
 export const KioskMode = () => {
   const [step, setStep] = useState('welcome');
-  const [selectedClass, setSelectedClass] = useState<any>(null);
+  const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [scanState, setScanState] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
   const [scannedStudent, setScannedStudent] = useState<any>(null);
 
@@ -37,11 +37,11 @@ export const KioskMode = () => {
   };
 
   if (step === 'welcome') return (
-    <div className="fixed inset-0 bg-[#020617] flex items-center justify-center p-8 overflow-hidden font-sans selection:bg-indigo-500/30">
+    <div className="fixed inset-0 bg-slate-950 flex items-center justify-center p-8 overflow-hidden font-sans selection:bg-indigo-500/30">
       <div className="absolute inset-0 mesh-gradient opacity-30"></div>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 text-center max-w-4xl">
          <div className="relative w-48 h-48 mx-auto bg-slate-900 border border-slate-800 rounded-[2.5rem] flex items-center justify-center shadow-2xl mb-12 group">
-            <div className="absolute inset-0 bg-indigo-500/10 blur-[40px] group-hover:bg-indigo-500/20 transition-all opacity-0 group-hover:opacity-100"></div>
+            <div className="absolute inset-0 bg-indigo-500/10 blur-2xl group-hover:bg-indigo-500/20 transition-all opacity-0 group-hover:opacity-100"></div>
             <Fingerprint size={80} className="text-white relative group-hover:scale-110 transition-transform shadow-glow" />
          </div>
          <h1 className="text-6xl md:text-8xl font-bold text-white tracking-tight mb-6 italic leading-none uppercase select-none font-sans">Presence <br/><span className="text-indigo-500">starts here.</span></h1>
@@ -54,7 +54,7 @@ export const KioskMode = () => {
   );
 
   if (step === 'class-select') return (
-    <div className="fixed inset-0 bg-[#020617] flex flex-col p-8 md:p-16 overflow-y-auto font-sans selection:bg-indigo-500/30">
+    <div className="fixed inset-0 bg-slate-950 flex flex-col p-8 md:p-16 overflow-y-auto font-sans selection:bg-indigo-500/30">
        <div className="absolute inset-0 mesh-gradient opacity-20"></div>
        <div className="max-w-6xl mx-auto w-full relative z-10">
           <button onClick={() => setStep('welcome')} className="flex items-center gap-3 text-slate-500 hover:text-white font-bold uppercase tracking-widest text-[10px] mb-12 transition-all group italic">
@@ -67,12 +67,12 @@ export const KioskMode = () => {
           </header>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {DUMMY_CLASSES.map((cls, i) => (
-               <div key={i} onClick={() => { setSelectedClass(cls); setStep('scanning'); }} className="p-8 bg-slate-900/50 border border-slate-800 rounded-[2rem] cursor-pointer hover:border-indigo-500/50 hover:bg-slate-900 transition-all group relative overflow-hidden shadow-2xl backdrop-blur-md">
+             {DUMMY_COURSES.map((course, i) => (
+               <div key={i} onClick={() => { setSelectedCourse(course); setStep('scanning'); }} className="p-8 bg-slate-900/50 border border-slate-800 rounded-4xl cursor-pointer hover:border-indigo-500/50 hover:bg-slate-900 transition-all group relative overflow-hidden shadow-2xl backdrop-blur-md">
                  <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-indigo-500/5 blur-3xl rounded-full group-hover:bg-indigo-500/10 transition-colors"></div>
                  <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all mb-8 w-fit shadow-2xl relative"><BookOpen size={24} /></div>
-                 <h3 className="text-2xl font-bold text-white mb-2 italic tracking-tight leading-none group-hover:text-indigo-400 transition-colors uppercase relative">{cls.name}</h3>
-                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic group-hover:text-slate-400 transition-colors relative">Node {cls.room}</p>
+                 <h3 className="text-2xl font-bold text-white mb-2 italic tracking-tight leading-none group-hover:text-indigo-400 transition-colors uppercase relative">{course.name}</h3>
+                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic group-hover:text-slate-400 transition-colors relative">Node {course.room}</p>
                  <ArrowRight className="absolute right-8 bottom-8 text-slate-800 group-hover:text-indigo-500 group-hover:translate-x-2 transition-all opacity-0 group-hover:opacity-100" size={24} />
                </div>
              ))}
@@ -82,14 +82,14 @@ export const KioskMode = () => {
   );
 
   if (step === 'scanning') return (
-    <div className="fixed inset-0 bg-[#020617] flex flex-col p-8 md:p-16 overflow-hidden items-center justify-center font-sans selection:bg-indigo-500/30">
+    <div className="fixed inset-0 bg-slate-950 flex flex-col p-8 md:p-16 overflow-hidden items-center justify-center font-sans selection:bg-indigo-500/30">
        <div className="absolute inset-0 mesh-gradient opacity-30"></div>
        <div className="max-w-4xl w-full text-center relative z-10">
           <div className="mb-16">
              <div className="flex items-center justify-center gap-3 mb-4">
                 <Badge variant="indigo">Real-time Verify</Badge>
              </div>
-             <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight italic uppercase leading-none">{selectedClass?.name}</h2>
+             <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight italic uppercase leading-none">{selectedCourse?.name}</h2>
              <p className="text-indigo-400 text-sm mt-4 font-bold uppercase tracking-widest italic opacity-60">Mesh Tracking Sequence Active</p>
           </div>
           
@@ -132,12 +132,12 @@ export const KioskMode = () => {
        </div>
 
        {/* Kiosk Identity Loop */}
-       <div className="absolute bottom-12 right-12 flex items-center gap-6 bg-slate-900/50 p-6 rounded-[2rem] border border-slate-800 shadow-2xl backdrop-blur-3xl relative z-10">
+       <div className="absolute bottom-12 right-12 flex items-center gap-6 bg-slate-900/50 p-6 rounded-4xl border border-slate-800 shadow-2xl backdrop-blur-3xl relative z-10">
           <div className="flex -space-x-3">
              {DUMMY_STUDENTS.slice(0, 4).map((s, i) => <img key={i} src={s.photo} className="w-10 h-10 rounded-xl object-cover border-2 border-slate-950" alt="" />)}
           </div>
           <div className="text-left border-l border-slate-800/50 pl-6">
-             <p className="text-white text-lg font-black italic italic leading-none">14 LOGS</p>
+             <p className="text-white text-lg font-black italic leading-none">14 LOGS</p>
              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1 italic">Recorded today</p>
           </div>
        </div>

@@ -7,7 +7,7 @@ import {
   ArrowRight,
   Clock
 } from 'lucide-react';
-import { DUMMY_STUDENTS, DUMMY_CLASSES, DUMMY_TEACHERS, DUMMY_SESSIONS, DUMMY_ATTENDANCE } from '../data/dummy';
+import { DUMMY_STUDENTS, DUMMY_COURSES, DUMMY_TEACHERS, DUMMY_SESSIONS, DUMMY_ATTENDANCE } from '../data/dummy';
 import { Badge, Card, StatCard, Tooltip } from '../components/Common';
 
 export const AdminDashboard = () => {
@@ -28,7 +28,7 @@ export const AdminDashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard label="Total Students" value="847" trend="12 new" icon={Users} variant="indigo" />
-          <StatCard label="Classes Today" value="12" trend="Next: Physics 11C" icon={BookOpen} variant="purple" />
+          <StatCard label="Courses Today" value="12" trend="Next: Physics 11C" icon={BookOpen} variant="purple" />
           <StatCard label="Active Sessions" value="3" trend="Concurrent streams" icon={UserCheck} variant="green" />
           <StatCard label="Absence Alerts" value="7" trend="Needs review" icon={Bell} variant="red" />
       </div>
@@ -42,7 +42,7 @@ export const AdminDashboard = () => {
           >
             <div className="mt-4 space-y-1">
               <div className="grid grid-cols-5 gap-4 px-4 pb-4 text-left border-b border-slate-800/50">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] italic">Class</span>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] italic">Course</span>
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] italic">Instructor</span>
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] italic">Time</span>
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] italic">Status</span>
@@ -51,15 +51,15 @@ export const AdminDashboard = () => {
               
               <div className="divide-y divide-slate-800/30">
                 {DUMMY_SESSIONS.map((session, i) => {
-                  const cls = DUMMY_CLASSES.find(c => c.id === session.class_id);
-                  const teacher = DUMMY_TEACHERS.find(t => t.id === cls?.teacher_id);
+                  const course = DUMMY_COURSES.find(c => c.id === session.course_id);
+                  const teacher = DUMMY_TEACHERS.find(t => t.id === course?.teacher_id);
                   return (
                     <div key={i} className="group grid grid-cols-5 gap-4 items-center px-4 py-4 rounded-xl hover:bg-slate-800/20 transition-all cursor-pointer">
                       <div className="min-w-0">
-                        <Tooltip content={cls?.name || ''} className="min-w-0">
-                          <p className="font-bold text-white group-hover:text-indigo-400 transition-colors italic truncate">{cls?.name}</p>
+                        <Tooltip content={course?.name || ''} className="min-w-0">
+                          <p className="font-bold text-white group-hover:text-indigo-400 transition-colors italic truncate">{course?.name}</p>
                         </Tooltip>
-                        <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest italic truncate">{cls?.room}</p>
+                        <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest italic truncate">{course?.room}</p>
                       </div>
                       <div className="min-w-0">
                         <Tooltip content={teacher?.name || ''} className="min-w-0">
@@ -93,7 +93,7 @@ export const AdminDashboard = () => {
                   alt="Teaching" 
                   className="w-full h-full object-cover opacity-40 mix-blend-overlay group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/40 to-transparent"></div>
+                <div className="absolute inset-0 bg-linear-to-r from-slate-900 via-slate-900/40 to-transparent"></div>
              </div>
              <div className="relative z-10 max-w-sm">
                 <Badge variant="purple">Institutional Spotlight</Badge>
@@ -115,7 +115,7 @@ export const AdminDashboard = () => {
               {DUMMY_ATTENDANCE.map((record, i) => {
                 const student = DUMMY_STUDENTS.find(s => s.id === record.student_id);
                 const session = DUMMY_SESSIONS.find(s => s.id === record.session_id);
-                const cls = DUMMY_CLASSES.find(c => c.id === session?.class_id);
+                const course = DUMMY_COURSES.find(c => c.id === session?.course_id);
                 return (
                   <div key={i} className="flex gap-5 relative group/item">
                     <img src={student?.photo} alt={student?.name} className="w-10 h-10 rounded-full border border-slate-800 shadow-xl relative z-10 group-hover/item:scale-110 transition-transform" />
@@ -124,7 +124,7 @@ export const AdminDashboard = () => {
                         <p className="text-sm font-bold text-white leading-none truncate italic">{student?.name}</p>
                         <Badge variant="success">PRESENT</Badge>
                       </div>
-                      <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-wide truncate italic">{cls?.name} check-in</p>
+                      <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-wide truncate italic">{course?.name} check-in</p>
                       <div className="flex items-center gap-2 mt-2 text-[9px] font-black text-slate-600 uppercase tracking-widest italic">
                          <span className="text-indigo-400/80">8:02 AM</span>
                          <span className="w-1 h-1 bg-slate-800 rounded-full"></span>

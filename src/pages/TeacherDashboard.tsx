@@ -7,7 +7,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { DUMMY_STUDENTS, DUMMY_CLASSES } from '../data/dummy';
+import { DUMMY_STUDENTS, DUMMY_COURSES } from '../data/dummy';
 import { Badge, Card, StatCard, cn, Tooltip } from '../components/Common';
 
 export const TeacherDashboard = () => (
@@ -21,7 +21,7 @@ export const TeacherDashboard = () => (
       <div className="flex items-center gap-3">
         <button className="flex items-center gap-2.5 px-6 py-3 bg-indigo-600 rounded-xl text-xs font-black text-white hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-900/20 uppercase tracking-tighter italic">
           <Plus size={16} />
-          New Module
+          New Course
         </button>
       </div>
     </div>
@@ -30,14 +30,14 @@ export const TeacherDashboard = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard label="Live Presence" value="24/28" trend="+2 since 8:00 AM" icon={Users} variant="indigo" />
         <StatCard label="Session Health" value="98%" trend="Optimal network" icon={Zap} variant="green" />
-        <StatCard label="Next Session" value="44m" trend="Quantum Mechanics" icon={Clock} variant="purple" />
+        <StatCard label="Next Class" value="44m" trend="Quantum Mechanics" icon={Clock} variant="purple" />
     </div>
 
+    {/* Real-time Manifest */}
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      {/* Real-time Manifest */}
       <Card 
         className="lg:col-span-8" 
-        title="Live Session Manifest" 
+        title="Live Class Manifest" 
         subtitle="Robotics Lab 4 • Biometric Mesh active"
         action={<button className="text-indigo-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:text-white transition-all italic">Full Manifest <ArrowRight size={14} /></button>}
       >
@@ -70,7 +70,7 @@ export const TeacherDashboard = () => (
 
       <div className="lg:col-span-4 space-y-8">
         {/* Verification Status */}
-        <Card title="Module Pipeline" subtitle="Homework decryption progress">
+        <Card title="Course Pipeline" subtitle="Homework decryption progress">
            <div className="space-y-4 mt-4">
               {['Neural Networks', 'Logic Circuits'].map(hw => (
                 <div key={hw} className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 shadow-xl group hover:border-indigo-500/40 transition-all">
@@ -92,18 +92,18 @@ export const TeacherDashboard = () => (
         {/* Schedule Index */}
         <Card title="Today's Schedule" subtitle="Assigned Logic Nodes">
            <div className="space-y-4 mt-4">
-              {DUMMY_CLASSES.slice(0, 3).map((cls, idx) => (
-                  <div key={cls.id} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-900/40 transition-all group cursor-pointer border border-transparent hover:border-slate-800">
+              {DUMMY_COURSES.slice(0, 3).map((course, idx) => (
+                  <div key={course.id} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-900/40 transition-all group cursor-pointer border border-transparent hover:border-slate-800">
                     <div className={cn(
                         "w-1 h-10 rounded-full",
                         idx === 0 ? "bg-indigo-500 shadow-[0_0_8px_#4f46e5]" : "bg-slate-800"
                     )}></div>
                     <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-center mb-1">
-                            <p className="text-sm font-bold text-white italic uppercase tracking-tighter truncate group-hover:text-indigo-400 transition-colors">{cls.name}</p>
+                            <p className="text-sm font-bold text-white italic uppercase tracking-tighter truncate group-hover:text-indigo-400 transition-colors">{course.name}</p>
                             <span className="text-[9px] font-black text-slate-600 uppercase italic shrink-0">{idx === 0 ? 'ACTIVE' : '12:30'}</span>
                         </div>
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest truncate italic">{cls.room}</p>
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest truncate italic">{course.room}</p>
                     </div>
                   </div>
               ))}

@@ -19,7 +19,7 @@ export const AdminLayout = ({ children }: any) => {
   const [isSidebarOpen] = useState(true);
 
   return (
-    <div className="flex h-screen bg-[#020617] overflow-hidden font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="flex h-screen bg-slate-950 overflow-hidden font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
       {/* Sidebar */}
       <aside className={cn(
         "bg-slate-900 border-r border-slate-800 transition-all duration-300 ease-in-out flex flex-col relative z-20 shadow-2xl",
@@ -42,8 +42,8 @@ export const AdminLayout = ({ children }: any) => {
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
           <NavItem label="Dashboard" icon={LayoutDashboard} href="/admin" active={pathname === '/admin'} />
           <NavItem label="Students" icon={Users} href="/admin/students" active={pathname.startsWith('/admin/students')} />
-          <NavItem label="Classes" icon={BookOpen} href="/admin/classes" active={pathname.startsWith('/admin/classes')} />
-          <NavItem label="Teachers" icon={User} href="/admin/teachers" active={pathname.startsWith('/admin/teachers')} />
+          <NavItem label="Courses" icon={BookOpen} href="/admin/courses" active={pathname.startsWith('/admin/courses')} />
+          <NavItem label="Lecturers" icon={User} href="/admin/teachers" active={pathname.startsWith('/admin/teachers')} />
           <NavItem label="Reports" icon={PieChart} href="/admin/reports" active={pathname.startsWith('/admin/reports')} />
           <NavItem label="Settings" icon={Settings} href="/admin/settings" active={pathname === '/admin/settings'} />
         </nav>
@@ -78,7 +78,7 @@ export const AdminLayout = ({ children }: any) => {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400 transition-colors" size={20} />
               <input 
                 type="text" 
-                placeholder="Search students, teachers, or classes..." 
+                placeholder="Search students, teachers, or courses..." 
                 className="w-full h-11 bg-slate-900/50 border border-slate-800 rounded-xl pl-12 pr-4 text-sm font-medium text-slate-200 placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/20 focus:bg-slate-900 transition-all outline-none"
               />
             </div>
@@ -86,7 +86,7 @@ export const AdminLayout = ({ children }: any) => {
 
           <div className="flex items-center gap-8 ml-8">
             <nav className="flex items-center gap-6">
-              <Link to="/admin/classes" className="text-sm font-bold text-slate-400 hover:text-indigo-400 transition-colors italic uppercase tracking-wider">My Classes</Link>
+              <Link to="/admin/courses" className="text-sm font-bold text-slate-400 hover:text-indigo-400 transition-colors italic uppercase tracking-wider">My Courses</Link>
               <Link to="/admin/reports" className="text-sm font-bold text-slate-400 hover:text-indigo-400 transition-colors italic uppercase tracking-wider">Reports</Link>
             </nav>
             
