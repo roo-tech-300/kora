@@ -38,6 +38,16 @@
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-slate-800 rounded-full;
   }
+
+  .modal-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+  .modal-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .modal-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-indigo-500/70 rounded-full;
+  }
 }
 
 /* Utility Classes */

@@ -7,7 +7,7 @@ export const signUp = async (email: string, password: string, name: string, titl
         if(!user){
             return;
         }
-        await databases.createDocument(
+        await databases.createRow(
             import.meta.env.VITE_APPWRITE_DATABASE_ID,
             import.meta.env.VITE_APPWRITE_USER_TABLE_ID,
             ID.unique(),
@@ -15,7 +15,8 @@ export const signUp = async (email: string, password: string, name: string, titl
                 title: title,
                 name: user.name,
                 email: user.email,
-                role: "Lecturer"
+                role: "Lecturer",
+                status: "Pending"
             }
         );
 

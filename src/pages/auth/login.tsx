@@ -11,10 +11,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { login } from '../../lib/apis/auth/login';
+import { resolveUserRoute } from '../../lib/apis/auth/resolveUserRoute';
 import { Spinner } from '../../components/Common';
+import { useAuth } from '../../context/AuthContext';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,11 +37,16 @@ export const LoginPage = () => {
 
     try {
       setLoading(true);
-        await login(email, password);
-        navigate('/admin');
+      await login(email, password);
+      const userProfile = await refreshProfile();
+      const destination = resolveUserRoute(userProfile);
+      navigate(destination, { replace: true });
       } catch (error) {
-        if(error.code === 401){
+        const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+        if (message.includes('Invalid credentials')) {
           toast.error('Invalid credentials.');
+        }else if(message.includes('session is active')) {
+          toast.error('Session already active. Refresh your browser or logout of other devices.');
         }else{
           toast.error('Failed to login.');
         }

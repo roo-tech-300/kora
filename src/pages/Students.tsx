@@ -1,33 +1,76 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Users, 
+  Users as UsersIcon, 
   Fingerprint, 
   Search, 
   Plus, 
   MoreVertical, 
   ArrowRight,
-  ShieldCheck,
-  Zap,
-  TrendingUp
+  School,
+  BookOpen,
 } from 'lucide-react';
-import { DUMMY_STUDENTS } from '../data/dummy';
-import { Badge, Card, StatCard, cn, Tooltip } from '../components/Common';
+import { getStudents } from '../lib/apis/students/students';
+import { Badge, Card, StatCard, Tooltip, cn } from '../components/Common';
 import { motion } from 'framer-motion';
+
+const ITEMS_PER_PAGE = 30;
 
 export const Students = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('All');
+  const [students, setStudents] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredStudents = DUMMY_STUDENTS.filter(student => {
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const data = await getStudents();
+        setStudents(data || []);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+        setStudents([]);
+      }
+    };
+    fetchStudents();
+  }, []);
+
+  const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         student.id.toLowerCase().includes(searchTerm.toLowerCase());
+                         student.matric_number.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesLevel = filterLevel === 'All' || student.level === filterLevel;
     return matchesSearch && matchesLevel;
   });
 
-  const enrolledCount = DUMMY_STUDENTS.filter(s => s.fingerprint_enrolled).length;
-  const coveragePercent = Math.round((enrolledCount / DUMMY_STUDENTS.length) * 100);
+  const enrolledCount = students.filter(s => s.$id).length; // Count students with records
+  const coveragePercent = students.length > 0 ? Math.round((enrolledCount / students.length) * 100) : 0;
+
+  // Get unique faculties and departments
+  const uniqueFaculties = new Set(students.map(s => s.faculty)).size;
+  const uniqueDepartments = new Set(students.map(s => s.department)).size;
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePageClick = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterLevel]);
 
   return (
     <div className="space-y-10 animate-in">
@@ -73,10 +116,10 @@ export const Students = () => {
 
       {/* Stats HUD */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-         <StatCard label="Total Inventory" value={DUMMY_STUDENTS.length.toString()} trend="+2 this week" icon={Users} variant="indigo" />
-         <StatCard label="Biometric Coverage" value={`${coveragePercent}%`} trend="Target: 100%" icon={Fingerprint} variant="purple" />
-         <StatCard label="Active Nodes" value="14" trend="Optimal Ping" icon={Zap} variant="green" />
-         <StatCard label="Mesh Sensitivity" value="98.2%" trend="Stable" icon={ShieldCheck} variant="indigo" />
+         <StatCard label="Total Students" value={students.length.toString()} trend="Active in System" icon={UsersIcon} variant="indigo" />
+         <StatCard label="Biometric Coverage" value={`${coveragePercent}%`} trend="Enrollment Rate" icon={Fingerprint} variant="purple" />
+         <StatCard label="Departments" value={uniqueDepartments.toString()} trend="Across Faculties" icon={BookOpen} variant="green" />
+         <StatCard label="Faculties" value={uniqueFaculties.toString()} trend="Institutional Reach" icon={School} variant="orange" />
       </div>
 
       {/* Main Inventory Table */}
@@ -87,68 +130,58 @@ export const Students = () => {
               <tr className="border-b border-slate-800/50 bg-slate-900/20">
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Identity</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Status</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Department</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Biometrics</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Attendance Rate</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Nodes</th>
                 <th className="px-6 py-4"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/30">
-              {filteredStudents.map((student, i) => (
+              {paginatedStudents.map((student, i) => (
                 <motion.tr 
                   initial={{ opacity: 0, y: 5 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   transition={{ delay: i * 0.05 }}
-                  key={student.id} 
+                  key={student.$id} 
                   className="group hover:bg-slate-900/40 transition-colors"
                 >
                   <td className="px-6 py-5">
-                    <Link to={`/admin/students/${student.id}`} className="flex items-center gap-4 group/item">
+                    <Link to={`/admin/students/${student.$id}`} className="flex items-center gap-4 group/item">
                       <div className="relative">
-                        <img src={student.photo} className="w-11 h-11 rounded-xl object-cover ring-2 ring-indigo-500/5 group-hover/item:scale-105 transition-transform shadow-2xl" alt="" />
-                        <div className={cn(
-                          "absolute -bottom-0.5 -right-0.5 w-3 h-3 border-2 border-slate-950 rounded-full",
-                          student.active ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : "bg-slate-700"
-                        )}></div>
+                        <div className="w-11 h-11 rounded-xl object-cover ring-2 ring-indigo-500/5 group-hover/item:scale-105 transition-transform shadow-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+                          {student.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-2 border-slate-950 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></div>
                       </div>
                       <div className="min-w-0 flex-1">
                         <Tooltip content={student.name} className="min-w-0">
                           <p className="text-sm font-bold text-white group-hover/item:text-indigo-400 transition-colors italic leading-none truncate">{student.name}</p>
                         </Tooltip>
-                        <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest italic group-hover/item:text-indigo-400/50">MATRIC: {student.id}</p>
+                        <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest italic group-hover/item:text-indigo-400/50">MATRIC: {student.matric_number}</p>
                       </div>
                     </Link>
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-bold text-white italic">{student.level} Level</span>
-                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">Course ID {student.course_id}</p>
+                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">{student.faculty || 'N/A'}</p>
                     </div>
                   </td>
                   <td className="px-6 py-5">
-                    {student.fingerprint_enrolled ? (
-                      <Badge variant="success" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">ENROLLED</Badge>
-                    ) : (
-                      <Badge variant="warning" className="bg-amber-500/10 text-amber-500 border-amber-500/20">PENDING</Badge>
-                    )}
+                    <Tooltip content={student.department || 'N/A'} className="min-w-0">
+                      <p className="text-[10px] font-bold text-white italic truncate">{student.department || 'N/A'}</p>
+                    </Tooltip>
+                  </td>
+                  <td className="px-6 py-5">
+                    <Badge variant="success" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">ACTIVE</Badge>
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-3">
                        <div className="flex-1 w-24 h-1 bg-slate-950 rounded-full overflow-hidden shadow-inner">
-                          <div className={cn(
-                            "h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(99,102,241,0.3)]",
-                            student.attendance_rate > 90 ? "bg-indigo-500" :
-                            student.attendance_rate > 70 ? "bg-purple-500" : "bg-rose-500"
-                          )} style={{ width: `${student.attendance_rate}%` }} />
+                          <div className="h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(99,102,241,0.3)] bg-indigo-500" style={{ width: `85%` }} />
                        </div>
-                       <span className="text-[11px] font-black text-white italic">{student.attendance_rate}%</span>
+                       <span className="text-[11px] font-black text-white italic">85%</span>
                     </div>
-                  </td>
-                  <td className="px-6 py-5">
-                     <div className="flex items-center gap-1.5 text-slate-500 group-hover:text-indigo-400 transition-colors">
-                        <TrendingUp size={14} />
-                        <span className="text-[10px] font-bold">Stable</span>
-                     </div>
                   </td>
                   <td className="px-6 py-5 text-right">
                     <button className="p-2 text-slate-700 hover:text-white transition-colors">
@@ -161,16 +194,40 @@ export const Students = () => {
           </table>
         </div>
         
-        {/* Pagination Dummy */}
+        {/* Pagination */}
         <div className="mt-8 flex justify-between items-center px-2">
-            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest italic">Showing 1 - {filteredStudents.length} of {DUMMY_STUDENTS.length} nodes</span>
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest italic">Showing {startIndex + 1} - {Math.min(endIndex, filteredStudents.length)} of {filteredStudents.length} students</span>
             <div className="flex items-center gap-4">
-                <button className="text-[10px] font-black text-slate-600 uppercase tracking-widest italic disabled:opacity-30 cursor-not-allowed">Previous</button>
+                <button 
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className="text-[10px] font-black text-slate-600 uppercase tracking-widest italic disabled:opacity-30 cursor-pointer hover:text-indigo-400 transition-colors disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
                 <div className="flex gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-indigo-500 flex items-center justify-center text-[10px] font-black text-white">1</div>
-                    <div className="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-[10px] font-black text-slate-400 hover:text-white transition-all cursor-pointer">2</div>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageClick(page)}
+                      className={cn(
+                        "w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-all",
+                        currentPage === page 
+                          ? "bg-indigo-500 text-white" 
+                          : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-indigo-500"
+                      )}
+                    >
+                      {page}
+                    </button>
+                  ))}
                 </div>
-                <button className="text-[10px] font-black text-indigo-400 uppercase tracking-widest italic flex items-center gap-1 group">Next <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" /></button>
+                <button 
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="text-[10px] font-black text-indigo-400 uppercase tracking-widest italic disabled:opacity-30 disabled:text-slate-600 flex items-center gap-1 group cursor-pointer hover:text-indigo-300 transition-colors disabled:cursor-not-allowed"
+                >
+                  Next <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                </button>
             </div>
         </div>
       </Card>

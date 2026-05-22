@@ -7,7 +7,6 @@ import {
   Edit,
   Eye,
   Activity,
-  Calendar,
   ArrowLeft
 } from 'lucide-react';
 import { DUMMY_STUDENTS } from '../data/dummy';

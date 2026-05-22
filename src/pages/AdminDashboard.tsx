@@ -9,14 +9,18 @@ import {
 } from 'lucide-react';
 import { DUMMY_STUDENTS, DUMMY_COURSES, DUMMY_TEACHERS, DUMMY_SESSIONS, DUMMY_ATTENDANCE } from '../data/dummy';
 import { Badge, Card, StatCard, Tooltip } from '../components/Common';
+import { useAuth } from '../context/AuthContext';
 
 export const AdminDashboard = () => {
+  const { profile } = useAuth();
+  const adminName = profile?.name || 'Admin';
+
   return (
     <div className="space-y-10">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-           <h1 className="text-3xl font-bold text-white tracking-tight italic">Good morning, Admin</h1>
+           <h1 className="text-3xl font-bold text-white tracking-tight italic">Good morning, {adminName}</h1>
            <p className="text-slate-500 mt-1.5 font-medium uppercase tracking-widest text-xs italic">Institutional overview for April 7, 2026</p>
         </div>
         <button className="flex items-center gap-2.5 px-6 py-3 bg-slate-900 border border-slate-800 rounded-xl text-xs font-black text-slate-300 hover:bg-slate-800 transition-all shadow-xl shadow-black/20 uppercase tracking-tighter italic">

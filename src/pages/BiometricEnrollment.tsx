@@ -196,9 +196,14 @@ export const BiometricEnrollment = () => {
            )}
            
            {step < 3 ? (
-             <button onClick={() => navigate(`/admin/students/${student.id}`)} className="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors italic border-b border-transparent hover:border-slate-500 pb-0.5">
-                Cancel Enrollment
-             </button>
+             <div className="flex items-center gap-4">
+               <button onClick={() => navigate('/admin/students')} className="text-[10px] font-black text-emerald-500 hover:text-emerald-400 uppercase tracking-widest transition-colors italic border-b border-transparent hover:border-emerald-500 pb-0.5">
+                 Skip Biometric
+               </button>
+               <button onClick={() => navigate(`/admin/students/${student.id}`)} className="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors italic border-b border-transparent hover:border-slate-500 pb-0.5">
+                  Cancel Enrollment
+               </button>
+             </div>
            ) : (
              <button onClick={() => navigate(`/admin/students/${student.id}`)} className="h-12 px-8 bg-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-indigo-900/20 hover:bg-indigo-500 transition-all italic flex items-center gap-2">
                <ArrowLeft size={16} /> Return to Profile

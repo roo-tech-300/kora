@@ -97,7 +97,6 @@ export const StatCard = ({ label, value, icon: Icon, trend, variant = 'indigo' }
                   "text-[10px] font-bold uppercase tracking-tight",
                   variant === 'red' ? "text-rose-500" : "text-emerald-500"
               )}>{trend}</span>
-              <span className="text-[10px] text-slate-600 font-medium uppercase tracking-widest">Growth Δ</span>
            </div>
         )}
       </div>

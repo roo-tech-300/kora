@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   Users,
   BookOpen,
@@ -9,14 +9,37 @@ import {
   LayoutDashboard,
   Fingerprint,
   Search,
-  Bell,
   User
 } from 'lucide-react';
 import { NavItem, cn } from './Common';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
 export const AdminLayout = ({ children }: any) => {
   const { pathname } = useLocation();
   const [isSidebarOpen] = useState(true);
+  const { profile, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Logged out successfully");
+      navigate('/login', { replace: true });
+    } catch (err) {
+      console.error("Logout failed:", err);
+      toast.error("Failed to log out");
+    }
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return "";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+    return parts[0].substring(0, Math.min(parts[0].length, 2)).toUpperCase();
+  };
 
   return (
     <div className="flex h-screen bg-slate-950 overflow-hidden font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
@@ -43,25 +66,45 @@ export const AdminLayout = ({ children }: any) => {
           <NavItem label="Dashboard" icon={LayoutDashboard} href="/admin" active={pathname === '/admin'} />
           <NavItem label="Students" icon={Users} href="/admin/students" active={pathname.startsWith('/admin/students')} />
           <NavItem label="Courses" icon={BookOpen} href="/admin/courses" active={pathname.startsWith('/admin/courses')} />
-          <NavItem label="Teachers" icon={User} href="/admin/teachers" active={pathname.startsWith('/admin/teachers')} />
+          <NavItem label="Lecturers" icon={User} href="/admin/teachers" active={pathname.startsWith('/admin/teachers')} />
           <NavItem label="Reports" icon={PieChart} href="/admin/reports" active={pathname.startsWith('/admin/reports')} />
           <NavItem label="Settings" icon={Settings} href="/admin/settings" active={pathname === '/admin/settings'} />
         </nav>
 
         <div className="p-4 mt-auto border-t border-slate-800/50">
           {isSidebarOpen ? (
-            <div className="p-4 rounded-2xl bg-slate-800/40 border border-slate-700/30 flex items-center gap-3 group hover:bg-slate-800/60 transition-colors cursor-pointer">
-              <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop" alt="User" className="w-10 h-10 rounded-full object-cover border border-slate-700" />
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-white truncate italic">Admin User</p>
-                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Super Admin</p>
+            <div className="p-4 rounded-2xl bg-slate-800/40 border border-slate-700/30 flex items-center gap-3 group hover:bg-slate-800/60 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-xs font-black text-white shadow-md shadow-indigo-900/30 shrink-0 italic">
+                {getInitials(profile?.name || "")}
               </div>
-              <LogOut size={16} className="ml-auto text-slate-500 hover:text-rose-400 cursor-pointer transition-colors" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-white truncate italic">{profile?.title ? `${profile.title} ` : ''}{profile?.name || 'Admin'}</p>
+                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">{profile?.role || 'Admin'}</p>
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-500 hover:text-rose-400 cursor-pointer transition-colors"
+                title="Log Out"
+              >
+                <LogOut size={16} />
+              </button>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-4">
-              <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop" alt="User" className="w-10 h-10 rounded-full object-cover border border-slate-700" />
-              <LogOut size={20} className="text-slate-500 hover:text-rose-400 cursor-pointer" />
+              <button
+                onClick={handleLogout}
+                className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-xs font-black text-white shadow-md shadow-indigo-900/30 shrink-0 italic cursor-pointer"
+                title={`${profile?.name} - Log Out`}
+              >
+                {getInitials(profile?.name || "")}
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="p-2 hover:bg-rose-500/10 rounded-lg text-slate-500 hover:text-rose-400 cursor-pointer transition-colors"
+                title="Log Out"
+              >
+                <LogOut size={20} />
+              </button>
             </div>
           )}
         </div>
@@ -81,24 +124,6 @@ export const AdminLayout = ({ children }: any) => {
                 placeholder="Search students, teachers, or classes..."
                 className="w-full h-11 bg-slate-900/50 border border-slate-800 rounded-xl pl-12 pr-4 text-sm font-medium text-slate-200 placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/20 focus:bg-slate-900 transition-all outline-none"
               />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-8 ml-8">
-            <nav className="flex items-center gap-6">
-              <Link to="/admin/courses" className="text-sm font-bold text-slate-400 hover:text-indigo-400 transition-colors italic uppercase tracking-wider">My Courses</Link>
-              <Link to="/admin/reports" className="text-sm font-bold text-slate-400 hover:text-indigo-400 transition-colors italic uppercase tracking-wider">Reports</Link>
-            </nav>
-
-            <Link to="/kiosk" className="bg-white text-slate-950 px-6 py-2.5 rounded-xl text-sm font-black hover:bg-slate-200 transition-all shadow-xl shadow-white/5 active:scale-95 uppercase tracking-tighter">
-              Check In
-            </Link>
-
-            <div className="relative">
-              <button className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-                <Bell size={20} />
-                <div className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 border-2 border-slate-950 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
-              </button>
             </div>
           </div>
         </header>
