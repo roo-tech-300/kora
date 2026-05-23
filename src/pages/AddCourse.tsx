@@ -21,13 +21,13 @@ export const AddCourse = () => {
     const [Teachers, setTeachers] = useState<any[]>([]);
     const [selectedTeachers, setSelectedTeachers] = useState<any[]>([]);
     const [schedule, setSchedule] = useState([
-        { day: 'Monday', active: true, start: '08:00', end: '10:00' },
-        { day: 'Tuesday', active: false, start: '08:00', end: '10:00' },
-        { day: 'Wednesday', active: true, start: '08:00', end: '10:00' },
-        { day: 'Thursday', active: false, start: '08:00', end: '10:00' },
-        { day: 'Friday', active: false, start: '08:00', end: '10:00' },
-        { day: 'Saturday', active: false, start: '08:00', end: '10:00' },
-        { day: 'Sunday', active: false, start: '08:00', end: '10:00' },
+        { day: 'Monday', active: true, start: '08:00', end: '10:00', startDate: '', endDate: '' },
+        { day: 'Tuesday', active: false, start: '08:00', end: '10:00', startDate: '', endDate: '' },
+        { day: 'Wednesday', active: true, start: '08:00', end: '10:00', startDate: '', endDate: '' },
+        { day: 'Thursday', active: false, start: '08:00', end: '10:00', startDate: '', endDate: '' },
+        { day: 'Friday', active: false, start: '08:00', end: '10:00', startDate: '', endDate: '' },
+        { day: 'Saturday', active: false, start: '08:00', end: '10:00', startDate: '', endDate: '' },
+        { day: 'Sunday', active: false, start: '08:00', end: '10:00', startDate: '', endDate: '' },
     ]);
 
     // form states
@@ -35,21 +35,53 @@ export const AddCourse = () => {
     const [courseCode, setCourseCode] = useState('');
     const [venue, setVenue] = useState('');
     const [unit, setUnit] = useState<number | string>('');
-    const [weeklySchedule, setWeeklySchedule] = useState<any[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+
+    const getIsoDate = (date: Date) => date.toISOString().slice(0, 10);
+
+    const getNextWeekdayDate = (dayName: string) => {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const targetIndex = days.indexOf(dayName);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const offset = (targetIndex - today.getDay() + 7) % 7;
+        const nextDate = new Date(today);
+        nextDate.setDate(today.getDate() + offset);
+        return getIsoDate(nextDate);
+    };
+
+    const normalizeScheduleSlot = (slot: any) => {
+        const startDate = slot.startDate || getNextWeekdayDate(slot.day);
+        const todayIso = getIsoDate(new Date());
+        const endDate = slot.endDate || (startDate > todayIso ? startDate : todayIso);
+
+        return {
+            day: slot.day,
+            start: slot.start,
+            end: slot.end,
+            startDate,
+            endDate,
+            active: slot.active,
+        };
+    };
+
+    const prepareScheduleForSubmit = () => schedule
+        .filter(slot => slot.active)
+        .map(normalizeScheduleSlot);
 
     const handleSubmit = async () =>{
         try {
             setIsSubmitting(true);
             const parsedUnit = Number(unit);
+            const submissionSchedule = prepareScheduleForSubmit();
             await createCourse(
               courseTitle,
               courseCode,
               selectedTeachers.map(t => t.$id),
               venue,
               Number.isNaN(parsedUnit) ? 0 : parsedUnit,
-              weeklySchedule
+              submissionSchedule
             );
             navigate('/admin/courses');
         } catch (error) {
@@ -71,14 +103,10 @@ export const AddCourse = () => {
         setSchedule(newSchedule);
     };
 
-    const syncScheduleToState = () => {
-        const activeSchedule = schedule.filter(slot => slot.active).map(slot => ({
-            day: slot.day,
-            start: slot.start,
-            end: slot.end,
-            active: slot.active
-        }));
-        setWeeklySchedule(activeSchedule);
+    const updateDate = (index: number, field: 'startDate' | 'endDate', value: string) => {
+        const newSchedule = [...schedule];
+        newSchedule[index][field] = value;
+        setSchedule(newSchedule);
     };
 
     const toggleTeacher = (teacher: any) => {
@@ -129,10 +157,6 @@ export const AddCourse = () => {
         }
         fetchTeachers();
     }, []);
-
-    useEffect(() => {
-        syncScheduleToState();
-    }, [schedule]);
 
     return (
         <div className="space-y-10 animate-in pb-20">
@@ -325,48 +349,78 @@ export const AddCourse = () => {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {schedule.map((slot, index) => (
                                     <div key={slot.day} className={cn(
-                                        "flex items-start justify-between p-4 rounded-2xl border transition-all gap-4",
-                                        slot.active ? "bg-slate-900/30 border-slate-700/50" : "bg-transparent border-slate-800/30 opacity-40 hover:opacity-100"
+                                        "flex flex-col items-start p-4 rounded-2xl border transition-all gap-4",
+                                        slot.active ? "bg-slate-900/30 border-slate-700/50" : "bg-transparent border-slate-800/30 opacity-60 hover:opacity-100"
                                     )}>
-                                        <div className="flex items-center gap-3 min-w-[100px] pt-1 shrink-0">
-                                            <button 
+                                        <div className="flex items-center gap-3 w-full">
+                                            <button
                                                 onClick={() => toggleDay(index)}
                                                 className={cn(
-                                                    "w-5 h-5 rounded-md flex items-center justify-center transition-all shrink-0",
-                                                    slot.active ? "bg-emerald-500 text-white" : "bg-slate-800 text-transparent"
+                                                    "w-6 h-6 rounded-lg flex items-center justify-center border transition-all",
+                                                    slot.active ? "bg-indigo-500 border-indigo-500 text-white" : "bg-slate-800 border-slate-700 text-transparent"
                                                 )}
                                             >
                                                 <Check size={12} />
                                             </button>
-                                            <span className="text-[11px] font-bold text-white italic uppercase tracking-wider">{slot.day}</span>
+                                            <span className="text-[12px] font-bold text-white italic uppercase tracking-wide">
+                                                {slot.day}
+                                            </span>
                                         </div>
 
-                                        <div className="flex flex-col items-end gap-2.5 flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 justify-end w-full">
-                                                <div className="flex items-center gap-1.5 bg-slate-950/30 px-2 py-1 rounded-xl border border-slate-800/30 shadow-inner">
-                                                    <Clock size={12} className="text-indigo-400 opacity-80" />
-                                                    <input 
-                                                        type="time" 
-                                                        value={slot.start} 
+                                        <div className="grid grid-cols-2 gap-2 w-full">
+                                            <div className="flex items-center gap-2 bg-slate-950/40 px-3 py-2 rounded-2xl border border-slate-800/50">
+                                                <Clock size={14} className="text-indigo-400" />
+                                                <div className="w-full">
+                                                    <p className="text-[8px] uppercase text-slate-500 tracking-widest">Start</p>
+                                                    <input
+                                                        type="time"
+                                                        value={slot.start}
                                                         onChange={(e) => updateTime(index, 'start', e.target.value)}
                                                         disabled={!slot.active}
-                                                        className="bg-transparent border-none p-0 text-[11px] font-bold text-white outline-none disabled:opacity-50 w-[70px] selection:bg-indigo-500/30 focus:ring-0 leading-none [&::-webkit-calendar-picker-indicator]:hidden"
-                                                    />
-                                                </div>
-                                                <div className="flex items-center gap-1.5 bg-slate-950/30 px-2 py-1 rounded-xl border border-slate-800/30 shadow-inner">
-                                                    <Clock size={12} className="text-rose-400 opacity-80" />
-                                                    <input 
-                                                        type="time" 
-                                                        value={slot.end} 
-                                                        onChange={(e) => updateTime(index, 'end', e.target.value)}
-                                                        disabled={!slot.active}
-                                                        className="bg-transparent border-none p-0 text-[11px] font-bold text-white outline-none disabled:opacity-50 w-[70px] selection:bg-indigo-500/30 focus:ring-0 leading-none [&::-webkit-calendar-picker-indicator]:hidden"
+                                                        className="bg-transparent border-none p-0 text-[11px] font-bold text-white outline-none disabled:opacity-50 w-full selection:bg-indigo-500/30 focus:ring-0 leading-none"
                                                     />
                                                 </div>
                                             </div>
-                                            <Badge variant={slot.active ? "success" : "slate"} className="min-w-[56px] flex justify-center py-0.5 mt-0.5 text-[7px] tracking-widest shadow-lg">
-                                                {slot.active ? 'ACTIVE' : 'OFF'}
-                                            </Badge>
+                                            <div className="flex items-center gap-2 bg-slate-950/40 px-3 py-2 rounded-2xl border border-slate-800/50">
+                                                <Clock size={14} className="text-indigo-400" />
+                                                <div className="w-full">
+                                                    <p className="text-[8px] uppercase text-slate-500 tracking-widest">End</p>
+                                                    <input
+                                                        type="time"
+                                                        value={slot.end}
+                                                        onChange={(e) => updateTime(index, 'end', e.target.value)}
+                                                        disabled={!slot.active}
+                                                        className="bg-transparent border-none p-0 text-[11px] font-bold text-white outline-none disabled:opacity-50 w-full selection:bg-indigo-500/30 focus:ring-0 leading-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2 w-full">
+                                            <Tooltip content="Optional start date for this weekly schedule. If empty, the frontend calculates the next matching weekday.">
+                                                <label className="text-[8px] uppercase tracking-widest text-slate-500">
+                                                    Start Date (optional)
+                                                    <input
+                                                        type="date"
+                                                        value={slot.startDate}
+                                                        onChange={(e) => updateDate(index, 'startDate', e.target.value)}
+                                                        disabled={!slot.active}
+                                                        className="w-full bg-slate-950/40 border border-slate-800 rounded-xl px-2 py-2 mt-1 text-[10px] text-white outline-none focus:border-indigo-500 focus:ring-0"
+                                                    />
+                                                </label>
+                                            </Tooltip>
+                                            <Tooltip content="Optional end date for this weekly schedule. If empty, the frontend uses today or the computed start date.">
+                                                <label className="text-[8px] uppercase tracking-widest text-slate-500">
+                                                    End Date (optional)
+                                                    <input
+                                                        type="date"
+                                                        value={slot.endDate}
+                                                        onChange={(e) => updateDate(index, 'endDate', e.target.value)}
+                                                        disabled={!slot.active}
+                                                        className="w-full bg-slate-950/40 border border-slate-800 rounded-xl px-2 py-2 mt-1 text-[10px] text-white outline-none focus:border-indigo-500 focus:ring-0"
+                                                    />
+                                                </label>
+                                            </Tooltip>
                                         </div>
                                     </div>
                                 ))}

@@ -12,7 +12,7 @@ const convertTo24Hour = (time: string): string => {
     return time; // Already in 24-hour format from the form (HH:MM)
 }
 
-export const createCourse = async (title: string, code: string, teachers: string[], venue: string, unit: number, schedule: {day: string, start: string, end: string, active?: boolean}[])=>{
+export const createCourse = async (title: string, code: string, teachers: string[], venue: string, unit: number, schedule: {day: string, start: string, end: string, startDate?: string, endDate?: string, active?: boolean}[])=>{
     try {
         const course = await databases.createRow(
             import.meta.env.VITE_APPWRITE_DATABASE_ID,
@@ -26,10 +26,7 @@ export const createCourse = async (title: string, code: string, teachers: string
                 unit
             }
         )
-        schedule.forEach(async (item) => {
-            await createTimetable(course.$id, item)
-        })
-            
+        await Promise.all(schedule.map((item) => createTimetable(course.$id, item)));
     } catch (error) {
         console.log(`Error creating course: ${error}`);
         throw error;
@@ -63,7 +60,7 @@ export const getCourses = async () => {
     }
 }
 
-export const createTimetable = async (course: string, schedule: {day: string, start: string, end: string, active?: boolean})=>{
+export const createTimetable = async (course: string, schedule: {day: string, start: string, end: string, startDate?: string, endDate?: string, active?: boolean})=>{
     try {
         await databases.createRow(
             import.meta.env.VITE_APPWRITE_DATABASE_ID,
@@ -74,7 +71,9 @@ export const createTimetable = async (course: string, schedule: {day: string, st
                 day: getDayIndex(schedule.day),
                 start: convertTo24Hour(schedule.start),
                 end: convertTo24Hour(schedule.end),
-                active: "True"
+                startDate: schedule.startDate || '',
+                endDate: schedule.endDate || '',
+                active: schedule.active ? "True" : "False"
             }
         )
     } catch (error) {
@@ -106,7 +105,7 @@ export const deleteCourseTimetable = async (courseId: string) => {
     }
 }
 
-export const replaceCourseTimetable = async (courseId: string, schedule: {day: string, start: string, end: string}[]) => {
+export const replaceCourseTimetable = async (courseId: string, schedule: {day: string, start: string, end: string, startDate?: string, endDate?: string}[]) => {
     try {
         await deleteCourseTimetable(courseId);
         await Promise.all(

@@ -20,9 +20,11 @@ Add a reliable offline-friendly attendance workflow that uses timetable definiti
 - Keep the existing `active` field if needed for schedule visibility, but the new date range controls instance generation.
 
 ### 2. Timetable instance generation logic
-- Update `createTimetable` / timetable helper functions to accept and persist `startDate` and `endDate`.
-- Add a helper to compute all scheduled dates between `startDate` and the lesser of `today` or `endDate` for each weekly timetable row.
-- For a timetable that only occurs on Monday, generate every Monday date from `startDate` through today (or `endDate`) and use those dates as individual class candidates.
+- Persist only the timetable metadata in the database:
+  - `startDate`, `endDate`, `day` / `weekday`, `start`, `end`
+- Generate individual class occurrences in the frontend using that timetable metadata.
+- Add a frontend helper to compute all scheduled dates between `startDate` and the lesser of `today` or `endDate` for each weekly timetable row.
+- For a timetable that only occurs on Monday, generate every Monday date from `startDate` through today (or `endDate`) and treat those as individual class candidates.
 - Ensure no unnecessary future instances are created beyond `endDate`.
 
 ### 3. Missed classes in CourseDetails
@@ -35,9 +37,9 @@ Add a reliable offline-friendly attendance workflow that uses timetable definiti
 ### 4. Upload / occurrence UI
 - Add two user-friendly buttons in `CourseDetails`:
   - `Report Missed Class` (marks a scheduled instance as not occurred)
-  - `Upload Attendance File` or `Record Attendance` (simulates uploading attendance for a class that occurred)
+  - `Upload Attendance CSV` (opens a dummy CSV upload flow for a class that occurred)
 - `Report Missed Class` should immediately create a `classes` row with `occurred: false` and the correct scheduled date.
-- `Upload Attendance File` should open a dummy front-end upload flow for now; no backend upload required.
+- `Upload Attendance CSV` should open a front-end-only upload interaction for now.
 - The actual class date should be computed from the timetable recurrence and the next unrecorded scheduled session.
 
 ### 5. Behavior details
@@ -49,12 +51,12 @@ Add a reliable offline-friendly attendance workflow that uses timetable definiti
   - display a friendly message like `No lectures for the rest of the week` or `No missed classes yet` depending on context.
 
 ## Next steps
-- Create or update timetable API helpers with `startDate`/`endDate` support.
-- Add computation helper to build missed class dates from weekly recurrence.
-- Wire the `CourseDetails` UI to this helper and replace the current recent sessions list.
-- Add friendly buttons and dummy upload modal.
+- Persist timetable metadata with `startDate`/`endDate`, but generate occurrences in the frontend.
+- Add a frontend computation helper to build missed class dates from weekly recurrence.
+- Wire the `CourseDetails` UI to derive missed sessions from timetable metadata and the `classes` table.
+- Add friendly buttons and a dummy CSV upload modal.
 
 ## Notes
-- The focus is on front-end flow first, with the attendance file upload as a mock experience.
+- The focus is on frontend flow first, with attendance upload implemented as a CSV mock experience.
 - The key enhancement is using actual calendar dates, not just weekday names, for missed/made classes.
 - `endDate` prevents generating irrelevant future instances and keeps the class history bounded.

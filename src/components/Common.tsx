@@ -106,8 +106,26 @@ export const StatCard = ({ label, value, icon: Icon, trend, variant = 'indigo' }
 
 import { motion, AnimatePresence } from 'framer-motion';
 
+const chunkText = (text: string, maxLen: number): string[] => {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length > maxLen) {
+      if (current) lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+};
+
 export const Tooltip = ({ content, children, className }: { content: string; children: React.ReactNode, className?: string }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const lines = chunkText(content, 30);
 
   return (
     <div className={cn("relative", className)} onMouseEnter={() => setIsVisible(true)} onMouseLeave={() => setIsVisible(false)}>
@@ -118,10 +136,12 @@ export const Tooltip = ({ content, children, className }: { content: string; chi
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 5, scale: 0.95 }}
-            className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-3 px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] whitespace-nowrap"
+            className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-3 px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
           >
             <div className="relative">
-              <p className="text-[11px] font-bold text-indigo-400 uppercase tracking-widest italic">{content}</p>
+              {lines.map((line, i) => (
+                <p key={i} className="text-[11px] font-bold text-indigo-400 uppercase tracking-widest italic whitespace-nowrap">{line}</p>
+              ))}
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-2 h-2 bg-slate-950 border-r border-b border-slate-800 rotate-45"></div>
             </div>
           </motion.div>

@@ -24,7 +24,7 @@ import { getInstitutionUsers } from '../lib/apis/auth/getInstitutionUsers';
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKLY_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const createDefaultWeeklySchedule = () => WEEKLY_DAYS.map(day => ({ day, active: false, start: '08:00', end: '10:00' }));
+const createDefaultWeeklySchedule = () => WEEKLY_DAYS.map(day => ({ day, active: false, start: '08:00', end: '10:00', startDate: '', endDate: '' }));
 
 export const CourseDetails = () => {
   const { id } = useParams();
@@ -43,6 +43,7 @@ export const CourseDetails = () => {
   const [schedule, setSchedule] = useState<any[]>(createDefaultWeeklySchedule());
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [acknowledgedClasses] = useState<{ dateIso: string; status: 'missed' | 'recorded' }[]>([]);
 
   const isTeacher = profile?.role === 'Lecturer';
   const isAdmin = profile?.role === 'Admin';
@@ -92,11 +93,85 @@ export const CourseDetails = () => {
         active: slot.active === 'True' || slot.active === true,
         start: slot.start || '08:00',
         end: slot.end || '10:00',
+        startDate: slot.startDate || '',
+        endDate: slot.endDate || '',
       };
     });
 
     return normalized;
   };
+
+  const parseIsoDate = (value: string) => {
+    if (!value) return null;
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) return null;
+    return new Date(year, month - 1, day);
+  };
+
+  const formatFriendlyDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  };
+
+  const getNextWeekdayDate = (dayIndex: number, fromDate: Date) => {
+    const next = new Date(fromDate);
+    next.setHours(0, 0, 0, 0);
+    const offset = (dayIndex - next.getDay() + 7) % 7;
+    next.setDate(next.getDate() + offset);
+    return next;
+  };
+
+  const getScheduledInstances = (scheduleRows: any[]) => {
+    if (!Array.isArray(scheduleRows)) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return scheduleRows.flatMap((slot: any) => {
+      const dayIndex = typeof slot.day === 'number'
+        ? slot.day
+        : WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(slot.day).toLowerCase());
+
+      const active = slot.active === 'True' || slot.active === true;
+      if (!active || dayIndex < 0 || dayIndex > 6) return [];
+
+      const rawStart = parseIsoDate(slot.startDate) || getNextWeekdayDate(dayIndex, today);
+      const rawEnd = parseIsoDate(slot.endDate) || today;
+      const startDate = new Date(rawStart);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(rawEnd);
+      endDate.setHours(0, 0, 0, 0);
+      const targetEnd = endDate < today ? endDate : today;
+      if (startDate > targetEnd) return [];
+
+      const instances: any[] = [];
+      const nextDate = new Date(startDate);
+      while (nextDate.getDay() !== dayIndex) {
+        nextDate.setDate(nextDate.getDate() + 1);
+      }
+
+      while (nextDate <= targetEnd) {
+        instances.push({
+          dayIndex,
+          date: new Date(nextDate),
+          dateIso: nextDate.toISOString().slice(0, 10),
+          start: slot.start || '08:00',
+          end: slot.end || '10:00',
+        });
+        nextDate.setDate(nextDate.getDate() + 7);
+      }
+
+      return instances;
+    }).sort((a, b) => a.date.getTime() - b.date.getTime());
+  };
+
+  const getActiveScheduleForSave = () => schedule
+    .filter((slot) => slot.active)
+    .map((slot) => ({
+      day: slot.day,
+      start: slot.start,
+      end: slot.end,
+      startDate: slot.startDate || '',
+      endDate: slot.endDate || ''
+    }));
 
   const toggleDay = (index: number) => {
     const updated = [...schedule];
@@ -109,10 +184,6 @@ export const CourseDetails = () => {
     updated[index] = { ...updated[index], [field]: value };
     setSchedule(updated);
   };
-
-  const getActiveScheduleForSave = () => schedule
-    .filter((slot) => slot.active)
-    .map((slot) => ({ day: slot.day, start: slot.start, end: slot.end }));
 
   useEffect(() => {
     if (!course) return;
@@ -233,13 +304,27 @@ export const CourseDetails = () => {
 
   const nextSession = getNextSession(course.schedule);
   const upcomingClasses = getUpcomingClasses(course.schedule);
+  const scheduledInstances = getScheduledInstances(course.schedule || []);
 
-  // Static recent sessions placeholder
-  const recentSessions = [
-    { date: 'Friday, Oct 27', title: 'Session', attendance: '—', status: 'COMPLETED' },
-    { date: 'Wednesday, Oct 25', title: 'Session', attendance: '—', status: 'COMPLETED' },
-    { date: 'Monday, Oct 23', title: 'Session', attendance: '—', status: 'ARCHIVED' },
-  ];
+  const recentSessions = (() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return scheduledInstances
+      .filter((instance) => instance.date.getTime() < today.getTime())
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .slice(0, 3)
+      .map((instance) => {
+        const record = acknowledgedClasses.find((record) => record.dateIso === instance.dateIso);
+        const status = record ? (record.status === 'missed' ? 'MISSED' : 'RECORDED') : 'PENDING';
+        return {
+          date: formatFriendlyDate(instance.date),
+          title: `${instance.start} - ${instance.end}`,
+          attendance: status === 'RECORDED' ? 'Recorded' : status === 'MISSED' ? 'Missed' : 'Pending',
+          status,
+        };
+      });
+  })();
 
   return (
     <div className={cn('space-y-8 animate-in', isTeacher ? 'pb-36' : 'pb-20')}>
@@ -385,28 +470,35 @@ export const CourseDetails = () => {
             </button>
           </div>
           <div className="space-y-3">
-            {recentSessions.map((session, i) => (
-              <div key={i} className="flex items-center justify-between p-4 bg-slate-900/50 border border-slate-800/50 rounded-xl hover:bg-slate-800/30 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700 text-slate-400">
-                    <CalendarDays size={18} />
+            {recentSessions.length > 0 ? (
+              recentSessions.map((session, i) => (
+                <div key={i} className="flex items-center justify-between p-4 bg-slate-900/50 border border-slate-800/50 rounded-xl hover:bg-slate-800/30 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700 text-slate-400">
+                      <CalendarDays size={18} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white italic">{session.date}</p>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{session.title}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-white italic">{session.date}</p>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{session.title}</p>
+                  <div className="flex items-center gap-8">
+                    <div className="text-right">
+                      <p className="text-xs font-black text-white italic">{session.attendance}</p>
+                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Status</p>
+                    </div>
+                    <Badge
+                      variant={session.status === 'RECORDED' ? 'success' : session.status === 'MISSED' ? 'danger' : 'info'}
+                      className="text-[9px] w-24 flex justify-center py-1.5 shadow-inner"
+                    >
+                      {session.status}
+                    </Badge>
                   </div>
                 </div>
-                <div className="flex items-center gap-8">
-                  <div className="text-right">
-                    <p className="text-xs font-black text-white italic">{session.attendance}</p>
-                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Present</p>
-                  </div>
-                  <Badge variant={session.status === 'COMPLETED' ? 'indigo' : 'info'} className="text-[9px] w-24 flex justify-center py-1.5 shadow-inner">
-                    {session.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-[10px] font-bold text-slate-600 italic mt-2">No past sessions available yet</p>
+            )}
           </div>
         </Card>
       </div>
@@ -645,6 +737,7 @@ export const CourseDetails = () => {
             { label: 'Units', value: course.unit ?? '—' },
             { label: 'Venue', value: course.venue || '—' },
             { label: 'Total Sessions', value: course.schedule?.length ?? 0 },
+            { label: 'Scheduled Dates', value: scheduledInstances.length },
             { label: 'Assigned Teachers', value: assignedTeachers.length },
             { label: 'Course ID', value: course.$id },
           ].map(({ label, value }) => (
