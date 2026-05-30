@@ -46,6 +46,7 @@ export const CourseDetails = () => {
   const [actionModalType, setActionModalType] = useState<'report' | 'upload' | null>(null);
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<CourseTab>('overview');
+  const [isOnline, setIsOnline] = useState(true);
 
   const isTeacher = profile?.role === 'Lecturer';
   const isAdmin = profile?.role === 'Admin';
@@ -70,6 +71,19 @@ export const CourseDetails = () => {
       .catch(() => setError('Failed to load course.'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    const updateOnlineStatus = () => setIsOnline(navigator.onLine);
+
+    updateOnlineStatus();
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+    };
+  }, []);
 
   const toggleTeacher = (teacher: any) => {
     if (selectedTeachers.find((t) => t.$id === teacher.$id)) {
@@ -400,6 +414,17 @@ export const CourseDetails = () => {
       />
 
       <CourseNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      <div className={cn(
+        'rounded-2xl border px-4 py-3 text-xs font-bold uppercase tracking-widest italic',
+        isOnline
+          ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-300'
+          : 'border-amber-500/20 bg-amber-500/5 text-amber-300'
+      )}>
+        {isOnline
+          ? 'Online mode active. Attendance can sync normally.'
+          : 'Offline mode active. Attendance should be saved locally and synced later.'}
+      </div>
 
       {/* Tab Contents */}
       {activeTab === 'overview' && (
