@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Badge, Card, Tooltip } from '../components/Common';
+  import { Badge, Card, Tooltip, Spinner } from '../components/Common';
 import { TeacherDashboardPanel } from '../components/TeacherDashboardPanel';
 import { getCourses } from '../lib/apis/courses/courses';
 import { useEffect, useState } from 'react';
@@ -21,7 +21,7 @@ export const Courses = () => {
   const [lecturers, setLecturers] = useState<any[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
   const [showMyCourses, setShowMyCourses] = useState(false);
-
+  const [loadingCourses, setLoadingCourses] = useState(true)
   // Helper function to get next session based on current day/time
   const getNextSession = (schedule: any[]) => {
     if (!schedule || schedule.length === 0) return null;
@@ -62,9 +62,15 @@ export const Courses = () => {
 
   useEffect(() => {
     const fetchCourses = async () =>{
-      const courses = await getCourses();
-      setCourses(courses);
-      return courses;
+      try {
+        setLoadingCourses(true)
+        const courses = await getCourses();
+        setCourses(courses);
+      } catch (error) {
+        console.log('Error fetching courses', error)
+      } finally {
+        setLoadingCourses(false)
+      }
     }
     fetchCourses();
 
@@ -146,8 +152,13 @@ export const Courses = () => {
       {showDashboard && profile && (
         <TeacherDashboardPanel teacherName={profile.name || 'Teacher'} courses={filteredCourses} />
       )}
-
-      {filteredCourses.length === 0 && (
+      
+      {loadingCourses ? (
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-12 flex items-center justify-center gap-3">
+          <Spinner />
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Loading courses...</p>
+        </div>
+      ) : filteredCourses.length === 0 && (
         <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 text-slate-400">
           {isLecturer
             ? 'You have no assigned courses yet.'

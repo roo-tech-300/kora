@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Clock, TrendingUp, Users } from 'lucide-react';
-import { Badge, Card, cn } from './Common';
+import { Clock, TrendingUp } from 'lucide-react';
+import { Badge, cn } from './Common';
 
 type TeacherDashboardPanelProps = {
   teacherName: string;
@@ -33,12 +33,6 @@ const getNextSession = (schedule: any[]) => {
   }
 
   return null;
-};
-
-const getScheduleDisplay = (schedule: any[]) => {
-  const nextSession = getNextSession(schedule);
-  if (!nextSession) return 'No schedule';
-  return `${nextSession.day} ${nextSession.time}`;
 };
 
 export const TeacherDashboardPanel = ({ teacherName, courses }: TeacherDashboardPanelProps) => {

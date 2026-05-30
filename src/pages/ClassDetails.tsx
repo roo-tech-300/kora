@@ -4,7 +4,6 @@ import {
   Clock,
   UserCheck,
   FileDown,
-  Edit,
   Eye,
   Activity,
   ArrowLeft
@@ -172,9 +171,7 @@ export const ClassDetails = () => {
             <button className="h-9 px-4 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 italic">
                <FileDown size={12} /> Export CSV
             </button>
-            <button className="h-9 px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 italic shadow-lg">
-               <Edit size={12} /> Manual Override
-            </button>
+
             <button 
               onClick={() => navigate('/kiosk')}
               className="h-9 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 italic shadow-[0_5px_15px_rgba(99,102,241,0.3)]"
