@@ -511,8 +511,8 @@ export const CourseDetails = () => {
 
     if (!current) return null;
 
-    const today = new Date();
-    const dateIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const nowDate = new Date();
+    const dateIso = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
 
     return {
       timetable: current.$id || '',
