@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { ArrowLeft, Fingerprint, PlayCircle } from 'lucide-react';
 import { Badge, cn } from '../components/Common';
 import { getCourseById } from '../lib/apis/courses/courses';
