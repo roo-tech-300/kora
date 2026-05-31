@@ -5,6 +5,7 @@ import { Badge, cn } from './Common';
 type TeacherDashboardPanelProps = {
   teacherName: string;
   courses: any[];
+  courseLinkBase?: string;
 };
 
 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -35,7 +36,7 @@ const getNextSession = (schedule: any[]) => {
   return null;
 };
 
-export const TeacherDashboardPanel = ({ teacherName, courses }: TeacherDashboardPanelProps) => {
+export const TeacherDashboardPanel = ({ teacherName, courses, courseLinkBase = '/teacher/class' }: TeacherDashboardPanelProps) => {
   const summaryCourses = courses.slice(0, 4);
   const courseCount = courses.length;
 
@@ -71,7 +72,7 @@ export const TeacherDashboardPanel = ({ teacherName, courses }: TeacherDashboard
                 return (
                   <Link
                     key={course.$id || course.id || index}
-                    to={`/teacher/class/${course.$id || course.id}`}
+                    to={`${courseLinkBase}/${course.$id || course.id}`}
                     className={cn(
                       'glass-card flex flex-col sm:flex-row sm:items-center justify-between p-6 gap-4 transition-all cursor-pointer',
                       index === 1 ? 'bg-indigo-500/2 border-indigo-500/20 hover:border-indigo-500/40' : 'hover:border-indigo-500/30'

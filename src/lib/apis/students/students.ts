@@ -94,3 +94,38 @@ export const enrollStudentInCourse = async (studentId: string, courseId: string)
         throw error;
     }
 }
+
+export const getStudentsInCourse = async (courseId: string) => {
+    try {
+        const enrolledResponse = await databases.listRows(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            import.meta.env.VITE_APPWRITE_STUDENTS_COURSES_TABLE_ID,
+            [Query.equal('course', courseId), Query.limit(200)]
+        );
+
+        const studentIds = enrolledResponse.rows
+            .map((row: any) => row.student)
+            .filter(Boolean);
+
+        if (studentIds.length === 0) {
+            return [];
+        }
+
+        const studentsResponse = await databases.listRows(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            import.meta.env.VITE_APPWRITE_STUDENTS_TABLE_ID,
+            [Query.limit(200)]
+        );
+
+        const studentMap = new Map(
+            studentsResponse.rows.map((student: any) => [student.$id, student])
+        );
+
+        return studentIds
+            .map((studentId) => studentMap.get(studentId))
+            .filter(Boolean);
+    } catch (error) {
+        console.log(`Error getting students in course: ${error}`);
+        throw error;
+    }
+}

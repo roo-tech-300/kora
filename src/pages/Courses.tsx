@@ -150,7 +150,11 @@ export const Courses = () => {
       </div>
 
       {showDashboard && profile && (
-        <TeacherDashboardPanel teacherName={profile.name || 'Teacher'} courses={filteredCourses} />
+        <TeacherDashboardPanel
+          teacherName={profile.name || 'Teacher'}
+          courses={filteredCourses}
+          courseLinkBase={isAdmin ? '/admin/courses' : '/teacher/class'}
+        />
       )}
       
       {loadingCourses ? (

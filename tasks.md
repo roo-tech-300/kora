@@ -8,27 +8,27 @@ Let a lecturer take attendance in class even without internet, store it locally,
 
 ## Phase 1: Make the app work offline
 
-- [ ] Add PWA support to the frontend.
-- [ ] Register a service worker.
-- [ ] Cache the app shell, JS, CSS, icons, and core routes.
+- [x] Add PWA support to the frontend.
+- [x] Register a service worker.
+- [x] Cache the app shell, JS, CSS, icons, and core routes.
 - [ ] Make the app installable on mobile and desktop.
 - [ ] Verify the app can reopen offline after the first online visit.
 
 ## Phase 2: Store attendance locally
 
-- [ ] Choose IndexedDB for offline storage.
-- [ ] Create a local attendance store.
+- [x] Choose IndexedDB for offline storage.
+- [x] Create a local attendance store.
 - [ ] Save attendance records immediately when the teacher marks them.
-- [ ] Add a local sync status field such as `pending`, `synced`, or `failed`.
-- [ ] Keep a timestamp for every local attendance action.
+- [x] Add a local sync status field such as `pending`, `synced`, or `failed`.
+- [x] Keep a timestamp for every local attendance action.
 
 ## Phase 3: Add sync logic
 
-- [ ] Create a queue for unsynced attendance records.
-- [ ] Build a sync function that uploads queued records when internet returns.
-- [ ] Trigger sync on app startup.
-- [ ] Trigger sync when the browser fires the `online` event.
-- [ ] Add a manual `Sync Now` action for backup.
+- [x] Create a queue for unsynced attendance records.
+- [x] Build a sync function that uploads queued records when internet returns.
+- [x] Trigger sync on app startup.
+- [x] Trigger sync when the browser fires the `online` event.
+- [x] Add a manual `Sync Now` action for backup.
 
 ## Phase 4: Prevent duplicates
 

@@ -1,5 +1,5 @@
 import { Query } from "appwrite";
-import { databases } from "../../appwrite";
+import { ID, databases } from "../../appwrite";
 
 type ClassRecord = {
   $id: string;
@@ -55,6 +55,27 @@ export const findMissingClassInstances = async (course: string, instances: Class
   const classRecords = await getClassRecordsForCourse(course);
   const existingKeys = new Set(classRecords.map(recordKey));
   return instances.filter((instance) => !existingKeys.has(instanceKey(instance)));
+};
+
+export const createClassRecord = async (data: ClassInstance) => {
+  try {
+    return await databases.createRow(
+      import.meta.env.VITE_APPWRITE_DATABASE_ID,
+      import.meta.env.VITE_APPWRITE_CLASSES_TABLE_ID,
+      ID.unique(),
+      {
+        course: data.course,
+        timetable: data.timetable,
+        date: data.date,
+        start: data.start,
+        end: data.end,
+        occurred: false,
+      }
+    );
+  } catch (error) {
+    console.log(`Error creating class record: ${error}`);
+    throw error;
+  }
 };
 
 export type { ClassInstance, ClassRecord };

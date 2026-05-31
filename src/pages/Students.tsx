@@ -5,7 +5,6 @@ import {
   Fingerprint, 
   Search, 
   Plus, 
-  MoreVertical, 
   ArrowRight,
   School,
   BookOpen,
@@ -13,6 +12,8 @@ import {
 import { getStudents } from '../lib/apis/students/students';
 import { Badge, Card, StatCard, Tooltip, cn } from '../components/Common';
 import { motion } from 'framer-motion';
+import { getCourses } from '../lib/apis/courses/courses';
+import { enrollStudentInCourse } from '../lib/apis/students/students';
 
 const ITEMS_PER_PAGE = 30;
 
@@ -20,7 +21,14 @@ export const Students = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('All');
   const [students, setStudents] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
+  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
+  const [isEnrollOpen, setIsEnrollOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [enrollError, setEnrollError] = useState<string | null>(null);
+  const [enrollSuccess, setEnrollSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -32,7 +40,19 @@ export const Students = () => {
         setStudents([]);
       }
     };
+
+    const fetchCourses = async () => {
+      try {
+        const data = await getCourses();
+        setCourses(data || []);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        setCourses([]);
+      }
+    };
+
     fetchStudents();
+    fetchCourses();
   }, []);
 
   const filteredStudents = students.filter(student => {
@@ -65,6 +85,51 @@ export const Students = () => {
 
   const handlePageClick = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const openEnrollModal = (student: any) => {
+    setSelectedStudent(student);
+    setSelectedCourseIds([]);
+    setEnrollError(null);
+    setEnrollSuccess(null);
+    setIsEnrollOpen(true);
+  };
+
+  const toggleCourse = (courseId: string) => {
+    setSelectedCourseIds((prev) =>
+      prev.includes(courseId)
+        ? prev.filter((id) => id !== courseId)
+        : [...prev, courseId]
+    );
+  };
+
+  const handleEnrollStudent = async () => {
+    if (!selectedStudent || selectedCourseIds.length === 0) {
+      setEnrollError('Select at least one course.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setEnrollError(null);
+    setEnrollSuccess(null);
+
+    try {
+      await Promise.all(
+        selectedCourseIds.map((courseId) => enrollStudentInCourse(selectedStudent.$id, courseId))
+      );
+
+      setEnrollSuccess(`Enrolled ${selectedStudent.name} in ${selectedCourseIds.length} course${selectedCourseIds.length > 1 ? 's' : ''}.`);
+      setTimeout(() => {
+        setIsEnrollOpen(false);
+        setSelectedStudent(null);
+        setSelectedCourseIds([]);
+      }, 900);
+    } catch (error) {
+      console.error('Error enrolling student:', error);
+      setEnrollError('Failed to enroll student in selected courses.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Reset to page 1 when filters change
@@ -184,8 +249,11 @@ export const Students = () => {
                     </div>
                   </td>
                   <td className="px-6 py-5 text-right">
-                    <button className="p-2 text-slate-700 hover:text-white transition-colors">
-                      <MoreVertical size={18} />
+                    <button
+                      onClick={() => openEnrollModal(student)}
+                      className="h-9 px-3 rounded-xl bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest italic cursor-pointer"
+                    >
+                      Enroll
                     </button>
                   </td>
                 </motion.tr>
@@ -231,6 +299,79 @@ export const Students = () => {
             </div>
         </div>
       </Card>
+
+      {isEnrollOpen && selectedStudent && (
+        <div className="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40 overflow-hidden">
+            <div className="p-6 border-b border-slate-800/60">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-300">Enroll Student</p>
+              <h3 className="mt-2 text-xl font-bold text-white italic">{selectedStudent.name}</h3>
+              <p className="mt-1 text-xs text-slate-400 uppercase tracking-widest italic">
+                Select the classes to add this student to
+              </p>
+            </div>
+
+            <div className="p-6">
+              {enrollError && (
+                <div className="mb-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-200">
+                  {enrollError}
+                </div>
+              )}
+
+              {enrollSuccess && (
+                <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-200">
+                  {enrollSuccess}
+                </div>
+              )}
+
+              <div className="max-h-80 overflow-y-auto space-y-3 pr-1">
+                {courses.length === 0 ? (
+                  <p className="text-sm text-slate-500 italic">No courses available.</p>
+                ) : (
+                  courses.map((course) => (
+                    <label
+                      key={course.$id}
+                      className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800/60 bg-slate-900/40 px-4 py-3 cursor-pointer hover:border-indigo-500/30 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-white italic truncate">{course.title}</p>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">{course.code}</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={selectedCourseIds.includes(course.$id)}
+                        onChange={() => toggleCourse(course.$id)}
+                        className="h-4 w-4 accent-indigo-500"
+                      />
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-800/60 flex flex-col sm:flex-row gap-3 sm:justify-end">
+              <button
+                onClick={() => setIsEnrollOpen(false)}
+                className="h-11 px-5 rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 transition-all text-xs font-black uppercase tracking-widest italic cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEnrollStudent}
+                disabled={isSubmitting || selectedCourseIds.length === 0}
+                className={cn(
+                  'h-11 px-5 rounded-xl text-xs font-black uppercase tracking-widest italic transition-all cursor-pointer',
+                  isSubmitting || selectedCourseIds.length === 0
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-500'
+                )}
+              >
+                {isSubmitting ? 'Saving...' : 'Enroll Selected'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

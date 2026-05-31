@@ -1,11 +1,14 @@
 import { Download, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 type AttendanceBarProps = {
-  isTeacher: boolean;
+  canManageAttendance: boolean;
+  courseId?: string;
+  activeSession?: any | null;
 };
 
-export const AttendanceBar = ({ isTeacher }: AttendanceBarProps) => {
-  if (!isTeacher) return null;
+export const AttendanceBar = ({ canManageAttendance, courseId, activeSession }: AttendanceBarProps) => {
+  if (!canManageAttendance) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur-2xl border-t border-slate-800 z-30 px-8 py-3 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
@@ -28,9 +31,13 @@ export const AttendanceBar = ({ isTeacher }: AttendanceBarProps) => {
         <button className="h-9 px-4 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 italic cursor-pointer">
           <Download size={12} /> Export CSV
         </button>       
-        <button className="h-9 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 italic shadow-[0_5px_15px_rgba(99,102,241,0.3)] cursor-pointer">
-          <Eye size={12} /> Kiosk View
-        </button>
+        <Link
+          to="/kiosk"
+          state={courseId ? { courseId, activeSession } : undefined}
+          className="h-9 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 italic shadow-[0_5px_15px_rgba(99,102,241,0.3)] cursor-pointer"
+        >
+          <Eye size={12} /> Take Attendance
+        </Link>
       </div>
     </div>
   );

@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { getCourseById, updateCourse, replaceCourseTimetable } from '../lib/apis/courses/courses';
 import { findExistingClassInstances } from '../lib/apis/courses/classes';
 import { getInstitutionUsers } from '../lib/apis/auth/getInstitutionUsers';
+import { getStudentsInCourse } from '../lib/apis/students/students';
+import { getQueuedAttendanceRecords, removeAttendanceRecord, updateAttendanceRecordStatus } from '../lib/offline/attendanceQueue';
 
 // Modular components
 import { CourseHeader } from '../components/course-details/CourseHeader';
@@ -41,17 +43,19 @@ export const CourseDetails = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [pastSessionStatuses, setPastSessionStatuses] = useState<any[]>([]);
+  const [courseStudents, setCourseStudents] = useState<any[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
   const [isFullLogOpen, setIsFullLogOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [actionModalType, setActionModalType] = useState<'report' | 'upload' | null>(null);
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<CourseTab>('overview');
   const [isOnline, setIsOnline] = useState(true);
+  const [queuedCount, setQueuedCount] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const isTeacher = profile?.role === 'Lecturer';
   const isAdmin = profile?.role === 'Admin';
-  const backHref = isTeacher ? '/teacher' : '/admin/courses';
-  const backLabel = isTeacher ? 'Dashboard' : 'Courses';
   const sessionName = course?.title || 'Course Details';
 
   useEffect(() => {
@@ -83,6 +87,19 @@ export const CourseDetails = () => {
       window.removeEventListener('online', updateOnlineStatus);
       window.removeEventListener('offline', updateOnlineStatus);
     };
+  }, []);
+
+  const refreshQueuedCount = async () => {
+    try {
+      const queued = await getQueuedAttendanceRecords();
+      setQueuedCount(queued.filter((item) => item.status === 'pending').length);
+    } catch (err) {
+      console.error('Failed to load queued attendance records', err);
+    }
+  };
+
+  useEffect(() => {
+    refreshQueuedCount();
   }, []);
 
   const toggleTeacher = (teacher: any) => {
@@ -126,6 +143,28 @@ export const CourseDetails = () => {
 
   const formatFriendlyDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  };
+
+  const parseTimeToMinutes = (value: string) => {
+    const raw = String(value || '').trim();
+    if (!raw) return 0;
+
+    const [hoursPart, minutesPart = '0'] = raw.split(':');
+    let hours = Number(hoursPart);
+    const minutes = Number(minutesPart);
+
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return 0;
+
+    if (hours >= 1 && hours <= 12 && raw.length <= 2) {
+      // Treat bare numbers like "4" as 4 PM for timetable entries.
+      hours += 12;
+    }
+
+    if (hours === 12 && raw.length <= 2) {
+      hours = 12;
+    }
+
+    return (hours * 60) + minutes;
   };
 
   const getNextWeekdayDate = (dayIndex: number, fromDate: Date) => {
@@ -260,6 +299,29 @@ export const CourseDetails = () => {
     loadPastStatuses();
   }, [course]);
 
+  useEffect(() => {
+    if (!course) return;
+    if (activeTab !== 'students') return;
+
+    const loadCourseStudents = async () => {
+      setStudentsLoading(true);
+      setStudentsError(null);
+
+      try {
+        const enrolled = await getStudentsInCourse(course.$id);
+        setCourseStudents(enrolled);
+      } catch (err) {
+        console.error('Failed to load enrolled students', err);
+        setStudentsError('Failed to load enrolled students.');
+        setCourseStudents([]);
+      } finally {
+        setStudentsLoading(false);
+      }
+    };
+
+    loadCourseStudents();
+  }, [course, activeTab]);
+
   const handleSaveDetails = async () => {
     if (!course) return;
     setSaveError(null);
@@ -289,6 +351,41 @@ export const CourseDetails = () => {
     }
   };
 
+  const handleSyncQueuedAttendance = async () => {
+    setIsSyncing(true);
+
+    try {
+      const queued = await getQueuedAttendanceRecords();
+      const pendingItems = queued.filter((item) => item.status === 'pending');
+
+      if (!pendingItems.length) {
+        setQueuedCount(0);
+        return;
+      }
+
+      if (!navigator.onLine) {
+        await Promise.all(
+          pendingItems.map((item) => updateAttendanceRecordStatus(item.id, 'failed', 'Device is offline'))
+        );
+        await refreshQueuedCount();
+        return;
+      }
+
+      await Promise.all(
+        pendingItems.map(async (item) => {
+          await updateAttendanceRecordStatus(item.id, 'synced');
+          await removeAttendanceRecord(item.id);
+        })
+      );
+
+      await refreshQueuedCount();
+    } catch (err) {
+      console.error('Failed to sync queued attendance', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -309,6 +406,16 @@ export const CourseDetails = () => {
   const assignedTeachers = lecturers.filter(l =>
     course.teachers && course.teachers.includes(l.documentId || l.$id)
   );
+  const currentUserId = profile?.documentId;
+  const isCourseTeacher = Boolean(
+    currentUserId &&
+    assignedTeachers.some((teacher) => (teacher.documentId || teacher.$id) === currentUserId)
+  );
+  const canManageAttendance = isCourseTeacher || isAdmin;
+    console.log('canManageAttendance:', canManageAttendance); // Debug log
+
+  const backHref = canManageAttendance ? '/teacher' : '/admin/courses';
+  const backLabel = canManageAttendance ? 'Dashboard' : 'Courses';
   const teacherNames = assignedTeachers.map(t => t.name).join(', ') || 'Unassigned';
 
   // Next session helper
@@ -316,10 +423,13 @@ export const CourseDetails = () => {
     if (!schedule || schedule.length === 0) return null;
     const today = new Date().getDay();
     const now = new Date();
-    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const active = schedule.filter(s => s.active === 'True' || s.active === true);
     if (!active.length) return null;
-    const todayClass = active.find(s => s.day === today && s.start > currentTime);
+    const todayClass = active
+      .filter(s => s.day === today)
+      .map((slot) => ({ ...slot, startMinutes: parseTimeToMinutes(slot.start) }))
+      .find((s) => s.startMinutes > currentMinutes);
     if (todayClass) return { label: `Today ${todayClass.start}`, isToday: true };
     for (let i = 1; i <= 7; i++) {
       const next = (today + i) % 7;
@@ -334,7 +444,7 @@ export const CourseDetails = () => {
 
     const now = new Date();
     const today = now.getDay();
-    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     const normalized = scheduleRows
       .map((slot: any) => {
@@ -356,7 +466,7 @@ export const CourseDetails = () => {
 
     const upcoming = normalized.filter((slot) => {
       if (slot.dayIndex < today) return false;
-      if (slot.dayIndex === today && slot.end <= currentTime) return false;
+      if (slot.dayIndex === today && parseTimeToMinutes(slot.end) <= currentMinutes) return false;
       return true;
     });
 
@@ -368,8 +478,56 @@ export const CourseDetails = () => {
     return upcoming;
   };
 
+  const getCurrentSession = (scheduleRows: any[]) => {
+    if (!Array.isArray(scheduleRows)) return null;
+
+    const now = new Date();
+    const today = now.getDay();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const activeToday = scheduleRows
+      .map((slot: any) => {
+        const dayIndex = typeof slot.day === 'number'
+          ? slot.day
+          : WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(slot.day).toLowerCase());
+
+        if (dayIndex < 0 || dayIndex > 6) return null;
+
+        return {
+          ...slot,
+          dayIndex,
+          active: slot.active === 'True' || slot.active === true,
+          start: slot.start || '00:00',
+          end: slot.end || '00:00',
+        };
+      })
+      .filter((slot) => slot && slot.active && slot.dayIndex === today) as any[];
+
+    const current = activeToday.find((slot) => {
+      const startMinutes = parseTimeToMinutes(slot.start);
+      const endMinutes = parseTimeToMinutes(slot.end);
+      return startMinutes <= currentMinutes && currentMinutes < endMinutes;
+    });
+
+    if (!current) return null;
+
+    const today = new Date();
+    const dateIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    return {
+      timetable: current.$id || '',
+      course: course.$id,
+      date: dateIso,
+      dayLabel: DAYS[current.dayIndex],
+      start: current.start,
+      end: current.end,
+      venue: course?.venue || 'Classroom',
+    };
+  };
+
   const nextSession = getNextSession(course.schedule);
   const upcomingClasses = getUpcomingClasses(course.schedule);
+  const currentSession = getCurrentSession(course.schedule);
   const scheduledInstances = getScheduledInstances(course.schedule || []);
 
   const sortedPastSessions = [...pastSessionStatuses].sort((a, b) => {
@@ -399,7 +557,7 @@ export const CourseDetails = () => {
     : '';
 
   return (
-    <div className={cn('space-y-8 animate-in', isTeacher ? 'pb-36' : 'pb-20')}>
+    <div className={cn('space-y-8 animate-in', canManageAttendance ? 'pb-36' : 'pb-20')}>
       <CourseHeader
         course={course}
         sessionName={sessionName}
@@ -407,7 +565,7 @@ export const CourseDetails = () => {
         isActive={isActive}
         setIsEditOpen={setIsEditOpen}
         nextSession={nextSession}
-        isTeacher={isTeacher}
+        isTeacher={canManageAttendance}
         isAdmin={isAdmin}
         backHref={backHref}
         backLabel={backLabel}
@@ -416,19 +574,53 @@ export const CourseDetails = () => {
       <CourseNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <div className={cn(
-        'rounded-2xl border px-4 py-3 text-xs font-bold uppercase tracking-widest italic',
+        'rounded-2xl border px-4 py-3 text-xs font-bold uppercase tracking-widest italic flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
         isOnline
           ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-300'
           : 'border-amber-500/20 bg-amber-500/5 text-amber-300'
       )}>
-        {isOnline
-          ? 'Online mode active. Attendance can sync normally.'
-          : 'Offline mode active. Attendance should be saved locally and synced later.'}
+        <span>
+          {isOnline
+            ? 'Online mode active. Attendance can sync normally.'
+            : 'Offline mode active. Attendance should be saved locally and synced later.'}
+        </span>
+        <button
+          onClick={handleSyncQueuedAttendance}
+          disabled={isSyncing || queuedCount === 0}
+          className={cn(
+            'h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer',
+            queuedCount === 0
+              ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+              : 'bg-white/10 text-white hover:bg-white/15'
+          )}
+        >
+          {isSyncing ? 'Syncing...' : `Sync Now (${queuedCount})`}
+        </button>
       </div>
 
       {/* Tab Contents */}
       {activeTab === 'overview' && (
         <>
+          {currentSession && (
+            <Card className="p-5 border-emerald-500/20 bg-emerald-500/5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-300">
+                    In Session
+                  </p>
+                  <h3 className="mt-2 text-sm font-bold text-white italic">
+                    {sessionName}
+                  </h3>
+                  <p className="mt-1 text-xs text-emerald-100/80">
+                    {currentSession.dayLabel} {currentSession.start} - {currentSession.end} · {currentSession.venue}
+                  </p>
+                </div>
+                <Badge variant="success" className="w-fit">
+                  Live Now
+                </Badge>
+              </div>
+            </Card>
+          )}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <UpcomingClasses
               upcomingClasses={upcomingClasses}
@@ -459,8 +651,39 @@ export const CourseDetails = () => {
           <p className="text-[10px] text-slate-500 uppercase tracking-widest italic">
             List of students currently enrolled in this course
           </p>
-          <div className="mt-4 p-6 bg-slate-900/40 border border-slate-800/50 rounded-2xl text-slate-400 italic text-sm">
-            Student list view placeholder. Integrate student enrolment table/APIs here.
+          <div className="mt-4">
+            {studentsLoading ? (
+              <div className="p-6 bg-slate-900/40 border border-slate-800/50 rounded-2xl text-slate-400 italic text-sm">
+                Loading enrolled students...
+              </div>
+            ) : studentsError ? (
+              <div className="p-6 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-200 italic text-sm">
+                {studentsError}
+              </div>
+            ) : courseStudents.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {courseStudents.map((student) => (
+                  <div key={student.$id} className="p-4 bg-slate-900/40 border border-slate-800/50 rounded-2xl flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-white italic truncate">{student.name}</h4>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                        {student.matric_number || 'No matric number'}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                        {student.department || 'No department'}
+                      </p>
+                    </div>
+                    <Badge variant="success" className="text-[9px] px-3 py-1.5">
+                      Enrolled
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4 p-6 bg-slate-900/40 border border-slate-800/50 rounded-2xl text-slate-400 italic text-sm">
+                No students are enrolled in this course yet.
+              </div>
+            )}
           </div>
         </Card>
       )}
@@ -591,7 +814,11 @@ export const CourseDetails = () => {
       />
 
       {/* Bottom Attendance Toolbar */}
-      <AttendanceBar isTeacher={isTeacher} />
+      <AttendanceBar
+        canManageAttendance={canManageAttendance}
+        courseId={course.$id}
+        activeSession={currentSession ? { ...currentSession, title: sessionName } : null}
+      />
     </div>
   );
 };
