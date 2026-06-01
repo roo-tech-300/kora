@@ -4,6 +4,7 @@ import { ArrowLeft, Fingerprint, PlayCircle } from 'lucide-react';
 import { Badge, cn } from '../components/Common';
 import { getCourseById } from '../lib/apis/courses/courses';
 import { createClassRecord, findExistingClassInstances } from '../lib/apis/courses/classes';
+import { getZonedCurrentMinutes, getZonedDateIso, getZonedDayIndex, getZonedCurrentTime } from '../lib/time/sessionClock';
 
 const WEEKLY_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -19,6 +20,7 @@ const parseTimeToMinutes = (value: string) => {
 
 const getDayIndex = (day: any) => {
   if (typeof day === 'number') return day;
+  if (typeof day === 'string' && /^\d+$/.test(day)) return Number(day);
   return WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(day).toLowerCase());
 };
 
@@ -49,14 +51,13 @@ export const KioskMode = () => {
           if (courseId && session.course && session.timetable && session.date) {
             const existing = await findExistingClassInstances(courseId, [session]);
             if (!existing.length) {
-              await createClassRecord({
-                course: courseId,
-                timetable: String(session.timetable),
-                date: String(session.date),
-                start: String(session.start || '08:00'),
-                end: String(session.end || '10:00'),
-              });
-            }
+            await createClassRecord({
+              course: courseId,
+              timetable: String(session.timetable),
+              date: String(session.date),
+              time: getZonedCurrentTime(),
+            });
+          }
           }
 
           setLoading(false);
@@ -79,9 +80,8 @@ export const KioskMode = () => {
         const courseData = await getCourseById(courseId);
         setCourse(courseData);
 
-        const now = new Date();
-        const today = now.getDay();
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const today = getZonedDayIndex();
+        const currentMinutes = getZonedCurrentMinutes();
 
         const normalizedSchedule = (courseData.schedule || [])
           .map((slot: any) => {
@@ -119,13 +119,12 @@ export const KioskMode = () => {
           return;
         }
 
-        const dateIso = now.toISOString().slice(0, 10);
+        const dateIso = getZonedDateIso();
         const classInstance = {
           course: courseId,
           timetable: String(liveSlot.$id || `${liveSlot.dayIndex}-${liveSlot.start}-${liveSlot.end}`),
           date: dateIso,
-          start: liveSlot.start,
-          end: liveSlot.end,
+          time: getZonedCurrentTime(),
         };
 
         const existing = await findExistingClassInstances(courseId, [classInstance]);

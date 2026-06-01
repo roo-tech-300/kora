@@ -8,6 +8,8 @@ import { findExistingClassInstances } from '../lib/apis/courses/classes';
 import { getInstitutionUsers } from '../lib/apis/auth/getInstitutionUsers';
 import { getStudentsInCourse } from '../lib/apis/students/students';
 import { getQueuedAttendanceRecords, removeAttendanceRecord, updateAttendanceRecordStatus } from '../lib/offline/attendanceQueue';
+import { getZonedCurrentMinutes, getZonedDateIso, getZonedDayIndex } from '../lib/time/sessionClock';
+import { useOffline } from '../context/OfflineContext';
 
 // Modular components
 import { CourseHeader } from '../components/course-details/CourseHeader';
@@ -28,6 +30,7 @@ const createDefaultWeeklySchedule = () => WEEKLY_DAYS.map(day => ({ day, active:
 export const CourseDetails = () => {
   const { id } = useParams();
   const { profile } = useAuth();
+  const { offline } = useOffline();
   const [course, setCourse] = useState<any>(null);
   const [lecturers, setLecturers] = useState<any[]>([]);
   const [selectedTeachers, setSelectedTeachers] = useState<any[]>([]);
@@ -117,7 +120,9 @@ export const CourseDetails = () => {
     scheduleRows.forEach((slot: any) => {
       const dayIndex = typeof slot.day === 'number'
         ? slot.day
-        : WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(slot.day).toLowerCase());
+        : (typeof slot.day === 'string' && /^\d+$/.test(slot.day))
+          ? Number(slot.day)
+          : WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(slot.day).toLowerCase());
 
       if (dayIndex < 0 || dayIndex >= WEEKLY_DAYS.length) return;
 
@@ -177,24 +182,26 @@ export const CourseDetails = () => {
 
   const getScheduledInstances = (scheduleRows: any[]) => {
     if (!Array.isArray(scheduleRows)) return [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getZonedDateIso();
+    const todayDate = new Date(today);
 
     return scheduleRows.flatMap((slot: any) => {
       const dayIndex = typeof slot.day === 'number'
         ? slot.day
-        : WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(slot.day).toLowerCase());
+        : (typeof slot.day === 'string' && /^\d+$/.test(slot.day))
+          ? Number(slot.day)
+          : WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(slot.day).toLowerCase());
 
       const active = slot.active === 'True' || slot.active === true;
       if (!active || dayIndex < 0 || dayIndex > 6) return [];
 
-      const rawStart = parseIsoDate(slot.startDate) || getNextWeekdayDate(dayIndex, today);
-      const rawEnd = parseIsoDate(slot.endDate) || today;
+      const rawStart = parseIsoDate(slot.startDate) || getNextWeekdayDate(dayIndex, todayDate);
+      const rawEnd = parseIsoDate(slot.endDate) || todayDate;
       const startDate = new Date(rawStart);
       startDate.setHours(0, 0, 0, 0);
       const endDate = new Date(rawEnd);
       endDate.setHours(0, 0, 0, 0);
-      const targetEnd = endDate < today ? endDate : today;
+      const targetEnd = endDate < todayDate ? endDate : todayDate;
       if (startDate > targetEnd) return [];
 
       const instances: any[] = [];
@@ -270,8 +277,7 @@ export const CourseDetails = () => {
         course: course.$id,
         timetable: String(instance.timetable || ''),
         date: instance.dateIso,
-        start: instance.start,
-        end: instance.end,
+        time: instance.start || '00:00',
       }));
 
     const loadPastStatuses = async () => {
@@ -412,7 +418,6 @@ export const CourseDetails = () => {
     assignedTeachers.some((teacher) => (teacher.documentId || teacher.$id) === currentUserId)
   );
   const canManageAttendance = isCourseTeacher || isAdmin;
-    console.log('canManageAttendance:', canManageAttendance); // Debug log
 
   const backHref = canManageAttendance ? '/teacher' : '/admin/courses';
   const backLabel = canManageAttendance ? 'Dashboard' : 'Courses';
@@ -421,9 +426,8 @@ export const CourseDetails = () => {
   // Next session helper
   const getNextSession = (schedule: any[]) => {
     if (!schedule || schedule.length === 0) return null;
-    const today = new Date().getDay();
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const today = getZonedDayIndex();
+    const currentMinutes = getZonedCurrentMinutes();
     const active = schedule.filter(s => s.active === 'True' || s.active === true);
     if (!active.length) return null;
     const todayClass = active
@@ -442,15 +446,16 @@ export const CourseDetails = () => {
   const getUpcomingClasses = (scheduleRows: any[]) => {
     if (!Array.isArray(scheduleRows)) return [];
 
-    const now = new Date();
-    const today = now.getDay();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const today = getZonedDayIndex();
+    const currentMinutes = getZonedCurrentMinutes();
 
     const normalized = scheduleRows
       .map((slot: any) => {
         const dayIndex = typeof slot.day === 'number'
           ? slot.day
-          : WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(slot.day).toLowerCase());
+          : (typeof slot.day === 'string' && /^\d+$/.test(slot.day))
+            ? Number(slot.day)
+            : WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(slot.day).toLowerCase());
 
         if (dayIndex < 0 || dayIndex > 6) return null;
 
@@ -466,7 +471,12 @@ export const CourseDetails = () => {
 
     const upcoming = normalized.filter((slot) => {
       if (slot.dayIndex < today) return false;
-      if (slot.dayIndex === today && parseTimeToMinutes(slot.end) <= currentMinutes) return false;
+      if (slot.dayIndex === today) {
+        const startMinutes = parseTimeToMinutes(slot.start);
+        const endMinutes = parseTimeToMinutes(slot.end);
+        if (startMinutes <= currentMinutes && currentMinutes < endMinutes) return false;
+        if (endMinutes <= currentMinutes) return false;
+      }
       return true;
     });
 
@@ -481,16 +491,17 @@ export const CourseDetails = () => {
   const getCurrentSession = (scheduleRows: any[]) => {
     if (!Array.isArray(scheduleRows)) return null;
 
-    const now = new Date();
-    const today = now.getDay();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const today = getZonedDayIndex();
+    const currentMinutes = getZonedCurrentMinutes();
 
     const activeToday = scheduleRows
       .map((slot: any) => {
         const dayIndex = typeof slot.day === 'number'
-          ? slot.day
-          : WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(slot.day).toLowerCase());
-
+        ? slot.day
+        : (typeof slot.day === 'string' && /^\d+$/.test(slot.day))
+        ? Number(slot.day)
+        : WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(slot.day).toLowerCase());
+        
         if (dayIndex < 0 || dayIndex > 6) return null;
 
         return {
@@ -511,8 +522,7 @@ export const CourseDetails = () => {
 
     if (!current) return null;
 
-    const nowDate = new Date();
-    const dateIso = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
+    const dateIso = getZonedDateIso();
 
     return {
       timetable: current.$id || '',
@@ -681,7 +691,7 @@ export const CourseDetails = () => {
               </div>
             ) : (
               <div className="mt-4 p-6 bg-slate-900/40 border border-slate-800/50 rounded-2xl text-slate-400 italic text-sm">
-                No students are enrolled in this course yet.
+                {offline ? 'Offline data not available yet.' : 'No students are enrolled in this course yet.'}
               </div>
             )}
           </div>

@@ -1,5 +1,6 @@
 import { Query } from "appwrite";
 import { databases, ID, storage } from "../../appwrite";
+import { isOffline, readCache, writeCache } from "../../localCache/offlineCache";
 
 export const createStudent = async(
     name: string,
@@ -65,14 +66,23 @@ export const uploadImage = async (file: File)=> {
 }
 
 export const getStudents = async () => {
+    const cacheKey = 'students:list';
     try {
+        if (isOffline()) {
+            const cached = readCache<any[]>(cacheKey);
+            return cached?.value || [];
+        }
+
         const students = await databases.listRows(
             import.meta.env.VITE_APPWRITE_DATABASE_ID,
             import.meta.env.VITE_APPWRITE_STUDENTS_TABLE_ID,
             [Query.limit(200)]
         )
+        writeCache(cacheKey, students.rows);
         return students.rows;
     } catch (error) {
+        const cached = readCache<any[]>(cacheKey);
+        if (cached) return cached.value;
         console.log(`Error getting students: ${error}`);
         throw error;
     }
@@ -96,7 +106,13 @@ export const enrollStudentInCourse = async (studentId: string, courseId: string)
 }
 
 export const getStudentsInCourse = async (courseId: string) => {
+    const cacheKey = `students:course:${courseId}`;
     try {
+        if (isOffline()) {
+            const cached = readCache<any[]>(cacheKey);
+            return cached?.value || [];
+        }
+
         const enrolledResponse = await databases.listRows(
             import.meta.env.VITE_APPWRITE_DATABASE_ID,
             import.meta.env.VITE_APPWRITE_STUDENTS_COURSES_TABLE_ID,
@@ -108,6 +124,7 @@ export const getStudentsInCourse = async (courseId: string) => {
             .filter(Boolean);
 
         if (studentIds.length === 0) {
+            writeCache(cacheKey, []);
             return [];
         }
 
@@ -121,10 +138,15 @@ export const getStudentsInCourse = async (courseId: string) => {
             studentsResponse.rows.map((student: any) => [student.$id, student])
         );
 
-        return studentIds
+        const enrolledStudents = studentIds
             .map((studentId) => studentMap.get(studentId))
             .filter(Boolean);
+
+        writeCache(cacheKey, enrolledStudents);
+        return enrolledStudents;
     } catch (error) {
+        const cached = readCache<any[]>(cacheKey);
+        if (cached) return cached.value;
         console.log(`Error getting students in course: ${error}`);
         throw error;
     }

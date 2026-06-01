@@ -1,5 +1,6 @@
 import { Query } from "appwrite";
 import { databases, ID } from "../../appwrite";
+import { isOffline, readCache, writeCache } from "../../localCache/offlineCache";
 
 // Helper function to convert day name to index (Sunday = 0, Monday = 1, etc.)
 const getDayIndex = (dayName: string): number => {
@@ -34,7 +35,13 @@ export const createCourse = async (title: string, code: string, teachers: string
 }
 
 export const getCourses = async () => {
+    const cacheKey = 'courses:list';
     try {
+        if (isOffline()) {
+            const cached = readCache<any[]>(cacheKey);
+            return cached?.value || [];
+        }
+
         const coursesResponse = await databases.listRows(
             import.meta.env.VITE_APPWRITE_DATABASE_ID,
             import.meta.env.VITE_APPWRITE_COURSE_TABLE_ID,
@@ -53,8 +60,12 @@ export const getCourses = async () => {
             schedule: timetableResponse.rows.filter(slot => slot.course === course.$id)
         }));
 
+        writeCache(cacheKey, coursesWithSchedule);
+
         return coursesWithSchedule;
     } catch (error) {
+        const cached = readCache<any[]>(cacheKey);
+        if (cached) return cached.value;
         console.log(`Error getting courses: ${error}`);
         throw error;
     }
@@ -118,21 +129,37 @@ export const replaceCourseTimetable = async (courseId: string, schedule: {day: s
 }
 
 export const getCurriculum = async (courseId: string) => {
+    const cacheKey = `courses:curriculum:${courseId}`;
     try {
+        if (isOffline()) {
+            const cached = readCache<any>(cacheKey);
+            return cached?.value || null;
+        }
+
         const curriculum = await databases.listRows(
             import.meta.env.VITE_APPWRITE_DATABASE_ID,
             import.meta.env.VITE_APPWRITE_CURRICULUM_TABLE_ID,
             [Query.equal('course', courseId), Query.limit(1)]
         )
-        return curriculum.rows[0];
+        const result = curriculum.rows[0];
+        if (result) writeCache(cacheKey, result);
+        return result;
     } catch (error) {
+        const cached = readCache<any>(cacheKey);
+        if (cached) return cached.value;
         console.log(`Error getting curriculum: ${error}`);
         throw error;
     }
 }
 
 export const getStudentRecommendedCourses = async (department: string, level: string) => {
+    const cacheKey = `courses:recommended:${department}:${level}`;
     try {
+        if (isOffline()) {
+            const cached = readCache<any[]>(cacheKey);
+            return cached?.value || [];
+        }
+
         const recommendedCoursesResponse = await databases.listRows(
             import.meta.env.VITE_APPWRITE_DATABASE_ID,
             import.meta.env.VITE_APPWRITE_CURRICULUM_TABLE_ID,
@@ -147,15 +174,24 @@ export const getStudentRecommendedCourses = async (department: string, level: st
                 )
             )
         );
+        writeCache(cacheKey, recommendedCourses);
         return recommendedCourses;
     } catch (error) {
+        const cached = readCache<any[]>(cacheKey);
+        if (cached) return cached.value;
         console.log(`Error getting student recommended courses: ${error}`);
         throw error;
     }
 }
 
 export const getCourseById = async (courseId: string) => {
+    const cacheKey = `courses:detail:${courseId}`;
     try {
+        if (isOffline()) {
+            const cached = readCache<any>(cacheKey);
+            return cached?.value || null;
+        }
+
         const course = await databases.getRow(
             import.meta.env.VITE_APPWRITE_DATABASE_ID,
             import.meta.env.VITE_APPWRITE_COURSE_TABLE_ID,
@@ -173,20 +209,31 @@ export const getCourseById = async (courseId: string) => {
             schedule: timetableResponse.rows,
         };
     } catch (error) {
+        const cached = readCache<any>(cacheKey);
+        if (cached) return cached.value;
         console.log(`Error getting course by id: ${error}`);
         throw error;
     }
 }
 
 export const searchCourses = async (query: string) => {
+    const cacheKey = `courses:search:${query}`;
     try {
+        if (isOffline()) {
+            const cached = readCache<any[]>(cacheKey);
+            return cached?.value || [];
+        }
+
         const result = await databases.listRows(
             import.meta.env.VITE_APPWRITE_DATABASE_ID,
             import.meta.env.VITE_APPWRITE_COURSE_TABLE_ID,
             [Query.contains('title', query), Query.limit(20)]
         )
+        writeCache(cacheKey, result.rows);
         return result.rows;
     } catch (error) {
+        const cached = readCache<any[]>(cacheKey);
+        if (cached) return cached.value;
         console.log(`Error searching courses: ${error}`);
         throw error;
     }

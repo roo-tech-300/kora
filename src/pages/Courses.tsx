@@ -14,9 +14,11 @@ import { getCourses } from '../lib/apis/courses/courses';
 import { useEffect, useState } from 'react';
 import { getInstitutionUsers } from '../lib/apis/auth/getInstitutionUsers';
 import { useAuth } from '../context/AuthContext';
+import { useOffline } from '../context/OfflineContext';
 
 export const Courses = () => {
   const { profile } = useAuth();
+  const { offline } = useOffline();
   const [courses, setCourses] = useState<any[]>([]);
   const [lecturers, setLecturers] = useState<any[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
@@ -149,6 +151,12 @@ export const Courses = () => {
         </div>
       </div>
 
+      {offline && (
+        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-[10px] font-black uppercase tracking-widest italic text-rose-300">
+          You are offline. Cached course data will be shown when available.
+        </div>
+      )}
+
       {showDashboard && profile && (
         <TeacherDashboardPanel
           teacherName={profile.name || 'Teacher'}
@@ -165,8 +173,8 @@ export const Courses = () => {
       ) : filteredCourses.length === 0 && (
         <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 text-slate-400">
           {isLecturer
-            ? 'You have no assigned courses yet.'
-            : 'No courses are available at the moment.'}
+            ? (offline ? 'Offline data not available yet.' : 'You have no assigned courses yet.')
+            : (offline ? 'Offline data not available yet.' : 'No courses are available at the moment.')}
         </div>
       )}
 

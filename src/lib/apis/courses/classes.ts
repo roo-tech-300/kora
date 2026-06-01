@@ -14,8 +14,7 @@ type ClassInstance = {
   course: string;
   timetable: string;
   date: string;
-  start: string;
-  end: string;
+  time: string;
 };
 
 const normalizeKey = (course: string, timetable: string, date: string) =>
@@ -67,9 +66,7 @@ export const createClassRecord = async (data: ClassInstance) => {
         course: data.course,
         timetable: data.timetable,
         date: data.date,
-        start: data.start,
-        end: data.end,
-        occurred: false,
+        time: data.time,
       }
     );
   } catch (error) {
