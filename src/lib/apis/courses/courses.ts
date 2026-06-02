@@ -61,6 +61,9 @@ export const getCourses = async () => {
         }));
 
         writeCache(cacheKey, coursesWithSchedule);
+        coursesWithSchedule.forEach((course: any) => {
+            if (course.$id) writeCache(`courses:detail:${course.$id}`, course);
+        });
 
         return coursesWithSchedule;
     } catch (error) {
@@ -204,10 +207,13 @@ export const getCourseById = async (courseId: string) => {
             [Query.equal('course', courseId)]
         );
 
-        return {
+        const courseWithSchedule = {
             ...course,
             schedule: timetableResponse.rows,
         };
+
+        writeCache(cacheKey, courseWithSchedule);
+        return courseWithSchedule;
     } catch (error) {
         const cached = readCache<any>(cacheKey);
         if (cached) return cached.value;

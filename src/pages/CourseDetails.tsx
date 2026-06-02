@@ -7,20 +7,18 @@ import { getCourseById, updateCourse, replaceCourseTimetable } from '../lib/apis
 import { findExistingClassInstances } from '../lib/apis/courses/classes';
 import { getInstitutionUsers } from '../lib/apis/auth/getInstitutionUsers';
 import { getStudentsInCourse } from '../lib/apis/students/students';
-import { getQueuedAttendanceRecords, removeAttendanceRecord, updateAttendanceRecordStatus } from '../lib/offline/attendanceQueue';
 import { getZonedCurrentMinutes, getZonedDateIso, getZonedDayIndex } from '../lib/time/sessionClock';
 import { useOffline } from '../context/OfflineContext';
 
 // Modular components
 import { CourseHeader } from '../components/course-details/CourseHeader';
 import { CourseNavigation, type CourseTab } from '../components/course-details/CourseNavigation';
-import { UpcomingClasses } from '../components/course-details/UpcomingClasses';
+import { LiveSessionCard } from '../components/course-details/LiveSessionCard';
 import { RecentSessions } from '../components/course-details/RecentSessions';
 import { CourseInfo } from '../components/course-details/CourseInfo';
 import { EditCourseModal } from '../components/course-details/EditCourseModal';
 import { FullSessionLogModal } from '../components/course-details/FullSessionLogModal';
 import { ActionModal } from '../components/course-details/ActionModal';
-import { AttendanceBar } from '../components/course-details/AttendanceBar';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKLY_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -54,10 +52,6 @@ export const CourseDetails = () => {
   const [actionModalType, setActionModalType] = useState<'report' | 'upload' | null>(null);
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<CourseTab>('overview');
-  const [isOnline, setIsOnline] = useState(true);
-  const [queuedCount, setQueuedCount] = useState(0);
-  const [isSyncing, setIsSyncing] = useState(false);
-
   const isAdmin = profile?.role === 'Admin';
   const sessionName = course?.title || 'Course Details';
 
@@ -78,32 +72,6 @@ export const CourseDetails = () => {
       .catch(() => setError('Failed to load course.'))
       .finally(() => setLoading(false));
   }, [id]);
-
-  useEffect(() => {
-    const updateOnlineStatus = () => setIsOnline(navigator.onLine);
-
-    updateOnlineStatus();
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-
-    return () => {
-      window.removeEventListener('online', updateOnlineStatus);
-      window.removeEventListener('offline', updateOnlineStatus);
-    };
-  }, []);
-
-  const refreshQueuedCount = async () => {
-    try {
-      const queued = await getQueuedAttendanceRecords();
-      setQueuedCount(queued.filter((item) => item.status === 'pending').length);
-    } catch (err) {
-      console.error('Failed to load queued attendance records', err);
-    }
-  };
-
-  useEffect(() => {
-    refreshQueuedCount();
-  }, []);
 
   const toggleTeacher = (teacher: any) => {
     if (selectedTeachers.find((t) => t.$id === teacher.$id)) {
@@ -357,41 +325,6 @@ export const CourseDetails = () => {
     }
   };
 
-  const handleSyncQueuedAttendance = async () => {
-    setIsSyncing(true);
-
-    try {
-      const queued = await getQueuedAttendanceRecords();
-      const pendingItems = queued.filter((item) => item.status === 'pending');
-
-      if (!pendingItems.length) {
-        setQueuedCount(0);
-        return;
-      }
-
-      if (!navigator.onLine) {
-        await Promise.all(
-          pendingItems.map((item) => updateAttendanceRecordStatus(item.id, 'failed', 'Device is offline'))
-        );
-        await refreshQueuedCount();
-        return;
-      }
-
-      await Promise.all(
-        pendingItems.map(async (item) => {
-          await updateAttendanceRecordStatus(item.id, 'synced');
-          await removeAttendanceRecord(item.id);
-        })
-      );
-
-      await refreshQueuedCount();
-    } catch (err) {
-      console.error('Failed to sync queued attendance', err);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -408,7 +341,6 @@ export const CourseDetails = () => {
     );
   }
 
-  // Resolve assigned teachers
   const assignedTeachers = lecturers.filter(l =>
     course.teachers && course.teachers.includes(l.documentId || l.$id)
   );
@@ -418,12 +350,10 @@ export const CourseDetails = () => {
     assignedTeachers.some((teacher) => (teacher.documentId || teacher.$id) === currentUserId)
   );
   const canManageAttendance = isCourseTeacher || isAdmin;
-
   const backHref = canManageAttendance ? '/teacher' : '/admin/courses';
   const backLabel = canManageAttendance ? 'Dashboard' : 'Courses';
   const teacherNames = assignedTeachers.map(t => t.name).join(', ') || 'Unassigned';
 
-  // Next session helper
   const getNextSession = (schedule: any[]) => {
     if (!schedule || schedule.length === 0) return null;
     const today = getZonedDayIndex();
@@ -441,51 +371,6 @@ export const CourseDetails = () => {
       if (found) return { label: `${DAYS[found.day]} ${found.start}`, isToday: false };
     }
     return null;
-  };
-
-  const getUpcomingClasses = (scheduleRows: any[]) => {
-    if (!Array.isArray(scheduleRows)) return [];
-
-    const today = getZonedDayIndex();
-    const currentMinutes = getZonedCurrentMinutes();
-
-    const normalized = scheduleRows
-      .map((slot: any) => {
-        const dayIndex = typeof slot.day === 'number'
-          ? slot.day
-          : (typeof slot.day === 'string' && /^\d+$/.test(slot.day))
-            ? Number(slot.day)
-            : WEEKLY_DAYS.findIndex((name) => name.toLowerCase() === String(slot.day).toLowerCase());
-
-        if (dayIndex < 0 || dayIndex > 6) return null;
-
-        return {
-          ...slot,
-          dayIndex,
-          active: slot.active === 'True' || slot.active === true,
-          start: slot.start || '00:00',
-          end: slot.end || '00:00',
-        };
-      })
-      .filter((slot) => slot && slot.active) as any[];
-
-    const upcoming = normalized.filter((slot) => {
-      if (slot.dayIndex < today) return false;
-      if (slot.dayIndex === today) {
-        const startMinutes = parseTimeToMinutes(slot.start);
-        const endMinutes = parseTimeToMinutes(slot.end);
-        if (startMinutes <= currentMinutes && currentMinutes < endMinutes) return false;
-        if (endMinutes <= currentMinutes) return false;
-      }
-      return true;
-    });
-
-    upcoming.sort((a, b) => {
-      if (a.dayIndex !== b.dayIndex) return a.dayIndex - b.dayIndex;
-      return a.start.localeCompare(b.start);
-    });
-
-    return upcoming;
   };
 
   const getCurrentSession = (scheduleRows: any[]) => {
@@ -532,11 +417,11 @@ export const CourseDetails = () => {
       start: current.start,
       end: current.end,
       venue: course?.venue || 'Classroom',
+      title: `${current.start} - ${current.end}`
     };
   };
 
   const nextSession = getNextSession(course.schedule);
-  const upcomingClasses = getUpcomingClasses(course.schedule);
   const currentSession = getCurrentSession(course.schedule);
   const scheduledInstances = getScheduledInstances(course.schedule || []);
 
@@ -563,11 +448,11 @@ export const CourseDetails = () => {
   }));
 
   const selectedSessionLabel = selectedSession
-    ? `${selectedSession.date} · ${selectedSession.title}`
+    ? `${selectedSession.date} - ${selectedSession.title}`
     : '';
 
   return (
-    <div className={cn('space-y-8 animate-in', canManageAttendance ? 'pb-36' : 'pb-20')}>
+    <div className={cn('space-y-8 animate-in', canManageAttendance ? 'pb-20' : 'pb-20')}>
       <CourseHeader
         course={course}
         sessionName={sessionName}
@@ -583,59 +468,22 @@ export const CourseDetails = () => {
 
       <CourseNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <div className={cn(
-        'rounded-2xl border px-4 py-3 text-xs font-bold uppercase tracking-widest italic flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
-        isOnline
-          ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-300'
-          : 'border-amber-500/20 bg-amber-500/5 text-amber-300'
-      )}>
-        <span>
-          {isOnline
-            ? 'Online mode active. Attendance can sync normally.'
-            : 'Offline mode active. Attendance should be saved locally and synced later.'}
-        </span>
-        <button
-          onClick={handleSyncQueuedAttendance}
-          disabled={isSyncing || queuedCount === 0}
-          className={cn(
-            'h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer',
-            queuedCount === 0
-              ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-              : 'bg-white/10 text-white hover:bg-white/15'
-          )}
-        >
-          {isSyncing ? 'Syncing...' : `Sync Now (${queuedCount})`}
-        </button>
-      </div>
-
-      {/* Tab Contents */}
       {activeTab === 'overview' && (
         <>
-          {currentSession && (
-            <Card className="p-5 border-emerald-500/20 bg-emerald-500/5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-300">
-                    In Session
-                  </p>
-                  <h3 className="mt-2 text-sm font-bold text-white italic">
-                    {sessionName}
-                  </h3>
-                  <p className="mt-1 text-xs text-emerald-100/80">
-                    {currentSession.dayLabel} {currentSession.start} - {currentSession.end} · {currentSession.venue}
-                  </p>
-                </div>
-                <Badge variant="success" className="w-fit">
-                  Live Now
-                </Badge>
-              </div>
-            </Card>
-          )}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <UpcomingClasses
-              upcomingClasses={upcomingClasses}
-              daysOfWeek={DAYS}
+            <LiveSessionCard
+              session={currentSession}
+              scheduleRows={course.schedule}
               className="lg:col-span-5"
+              onTakeAttendance={() => {
+                if (currentSession) {
+                  setActiveTab('attendance');
+                  setSelectedSession({
+                    date: currentSession.date,
+                    title: `${currentSession.start} - ${currentSession.end}`,
+                  });
+                }
+              }}
             />
             <RecentSessions
               recentSessions={recentSessions}
@@ -780,7 +628,6 @@ export const CourseDetails = () => {
         </Card>
       )}
 
-      {/* Modals */}
       <EditCourseModal
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
@@ -821,13 +668,6 @@ export const CourseDetails = () => {
         }}
         actionModalType={actionModalType}
         selectedSessionLabel={selectedSessionLabel}
-      />
-
-      {/* Bottom Attendance Toolbar */}
-      <AttendanceBar
-        canManageAttendance={canManageAttendance}
-        courseId={course.$id}
-        activeSession={currentSession ? { ...currentSession, title: sessionName } : null}
       />
     </div>
   );

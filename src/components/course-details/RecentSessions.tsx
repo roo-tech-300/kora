@@ -24,8 +24,7 @@ export const RecentSessions = ({
     <Card className={cn("p-6 flex flex-col", className)}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h3 className="text-sm font-bold text-white tracking-tight italic">Recent Sessions</h3>
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest italic">Showing the latest 3 past instances</p>
+          <h3 className="text-sm font-bold text-white tracking-tight">Recent Sessions</h3>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {hasMoreSessions && (
