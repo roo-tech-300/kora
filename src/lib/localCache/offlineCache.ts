@@ -10,7 +10,7 @@ const isStorageAvailable = () => typeof window !== 'undefined' && typeof localSt
 const keyFor = (key: string) => `${prefix}${key}`;
 
 export const readCache = <T>(key: string): CacheEnvelope<T> | null => {
-  if (!isStorageAvailable()) return null;
+  if (!isStorageAvailable()) return null;  
 
   try {
     const raw = localStorage.getItem(keyFor(key));

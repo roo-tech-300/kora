@@ -1,6 +1,6 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
+import type {ErrorInfo, ReactNode} from 'react'
 import { AlertCircle, RefreshCw, Home } from 'lucide-react';
-import { cn } from './Common';
 
 interface Props {
   children?: ReactNode;
