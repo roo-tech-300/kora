@@ -79,7 +79,7 @@ export const LiveSessionCard = ({ session, scheduleRows, onTakeAttendance, class
               {isLive ? 'Live Session' : 'Upcoming classes'}
             </p>
             <h3 className="text-xl font-bold text-white tracking-tight">
-              {isLive ? 'Session is live now' : 'No live session right now'}
+              {isLive ? 'Session is live now' : 'Weekly Schedule'}
             </h3>
           </div>
 

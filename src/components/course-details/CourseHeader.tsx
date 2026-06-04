@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ChevronRight, User, MapPin, Clock, Pencil } from 'lucide-react';
+import { ChevronRight, User, MapPin, Clock, Pencil, PlayCircle } from 'lucide-react';
 import { Badge } from '../Common';
 
 type CourseHeaderProps = {
@@ -8,6 +8,9 @@ type CourseHeaderProps = {
   teacherNames: string;
   isActive: boolean;
   setIsEditOpen: (open: boolean) => void;
+  onStartSession?: () => void;
+  onEndSession?: () => void;
+  isLive?: boolean;
   nextSession: { label: string; isToday: boolean } | null;
   isTeacher: boolean;
   isAdmin: boolean;
@@ -21,6 +24,9 @@ export const CourseHeader = ({
   teacherNames,
   isActive,
   setIsEditOpen,
+  onStartSession,
+  onEndSession,
+  isLive,
   nextSession,
   isTeacher,
   isAdmin,
@@ -74,6 +80,23 @@ export const CourseHeader = ({
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <div className="flex flex-wrap items-center gap-3">
+            {(isTeacher || isAdmin) && (
+              isLive ? (
+                <button
+                  onClick={onEndSession}
+                  className="h-10 px-5 bg-rose-600 rounded-xl text-xs font-black text-white hover:bg-rose-500 transition-all flex items-center gap-2 uppercase tracking-tighter italic shadow-lg shadow-rose-900/20 active:scale-95"
+                >
+                  <PlayCircle size={14} className="rotate-180 text-rose-200" /> End Session
+                </button>
+              ) : (
+                <button
+                  onClick={onStartSession}
+                  className="h-10 px-5 bg-indigo-600 rounded-xl text-xs font-black text-white hover:bg-indigo-500 transition-all flex items-center gap-2 uppercase tracking-tighter italic shadow-lg shadow-indigo-900/20 active:scale-95"
+                >
+                  <PlayCircle size={14} /> Start Session
+                </button>
+              )
+            )}
             {isAdmin && (
               <button
                 onClick={() => setIsEditOpen(true)}

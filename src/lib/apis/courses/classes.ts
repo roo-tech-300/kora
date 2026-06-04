@@ -7,7 +7,8 @@ type ClassRecord = {
   course: string;
   timetable: string;
   date: string;
-  occurred: boolean | string;
+  time?: string;
+  status: 'Done' | 'Pending' | 'Undone';
   [key: string]: any;
 };
 
@@ -79,6 +80,7 @@ export const createClassRecord = async (data: ClassInstance) => {
         timetable: data.timetable,
         date: data.date,
         time: data.time,
+        status: 'Pending',
       }
     );
 
@@ -91,6 +93,31 @@ export const createClassRecord = async (data: ClassInstance) => {
     return record;
   } catch (error) {
     console.log(`Error creating class record: ${error}`);
+    throw error;
+  }
+};
+
+export const updateClassRecord = async (recordId: string, data: Partial<ClassRecord>) => {
+  try {
+    const record = await databases.updateRow(
+      import.meta.env.VITE_APPWRITE_DATABASE_ID,
+      import.meta.env.VITE_APPWRITE_CLASSES_TABLE_ID,
+      recordId,
+      data
+    );
+
+    if (record && (record as any).course) {
+      const cacheKey = `classes:course:${(record as any).course}`;
+      const cached = readCache<ClassRecord[]>(cacheKey);
+      if (cached) {
+        const updated = cached.value.map(r => r.$id === recordId ? (record as unknown as ClassRecord) : r);
+        writeCache(cacheKey, updated);
+      }
+    }
+
+    return record;
+  } catch (error) {
+    console.log(`Error updating class record ${recordId}: ${error}`);
     throw error;
   }
 };

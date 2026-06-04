@@ -6,7 +6,7 @@ export type AttendanceQueueItem = {
   timetable: string;
   date: string;
   studentId?: string;
-  occurred: boolean;
+  classStatus: 'Done' | 'Pending' | 'Undone';
   payload: Record<string, any>;
   status: AttendanceSyncStatus;
   createdAt: number;
