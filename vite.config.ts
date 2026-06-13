@@ -8,4 +8,15 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    watch: {
+      ignored: [
+        '**/node-bridge/.db/**',
+        '**/node-bridge/.exec/**',
+        '**/.db/**',
+        '**/.exec/**',
+        '**/*.xyt',
+      ],
+    },
+  },
 })

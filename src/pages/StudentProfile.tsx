@@ -1,25 +1,26 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Fingerprint, 
-  Mail, 
-  Phone, 
-  Calendar, 
+import {
+  ArrowLeft,
+  Fingerprint,
+  Mail,
+  Phone,
+  Calendar,
   ChevronRight,
   Zap
 } from 'lucide-react';
-import { 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip 
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip
 } from 'recharts';
 import { motion } from 'framer-motion';
-import { DUMMY_STUDENTS, DUMMY_COURSES } from '../data/dummy';
 import { Badge, Card } from '../components/Common';
+import { getStudentById } from '../lib/apis/students/students';
 
 const ATTENDANCE_HISTORY = [
   { name: 'W1', rate: 85 },
@@ -42,10 +43,41 @@ const RECENT_SESSIONS = [
 
 export const StudentProfile = () => {
   const { id } = useParams();
-  const student = DUMMY_STUDENTS.find(s => s.id === id) || DUMMY_STUDENTS[0];
-  const course = DUMMY_COURSES.find(c => c.id === student.course_id);
+  const [student, setStudent] = useState<any | null>(null);
 
-  const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
+  useEffect(() => {
+    if (!id) return;
+
+    (async () => {
+      try {
+        const result = await getStudentById(id as string);
+        setStudent(result || null);
+      } catch (error) {
+        console.error('Failed to load student', error);
+        setStudent(null);
+      }
+    })();
+  }, [id]);
+
+  const currentStudent = student || {
+    name: 'Loading student',
+    level: '—',
+    department: '—',
+    faculty: '—',
+    matric_number: '—',
+    guardianEmail: '—',
+    guardianPhone: '—',
+    phone_number: '—',
+    email: '—',
+    attendance_rate: 0,
+    $id: id || '—',
+  };
+  const courseName = student?.course_name || student?.department || student?.faculty || 'N/A';
+  const initials = (currentStudent.name || 'Student')
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase();
 
   return (
     <div className="space-y-8 animate-in pb-20">
@@ -56,7 +88,7 @@ export const StudentProfile = () => {
         </Link>
         <div className="flex items-center gap-3">
           <button className="bg-slate-900 border border-slate-800 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 italic">Edit Profile</button>
-          <Link to={`/admin/students/${student.id}/enroll`} className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-900/20 active:scale-95 flex items-center gap-2 italic">
+          <Link to={`/admin/students/${currentStudent.$id}/enroll`} className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-900/20 active:scale-95 flex items-center gap-2 italic">
             <Fingerprint size={14} /> Re-enroll Biometrics
           </Link>
         </div>
@@ -67,8 +99,8 @@ export const StudentProfile = () => {
         <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/5 blur-[100px] rounded-full group-hover:bg-indigo-500/10 transition-colors"></div>
         
         <div className="relative">
-          {student.photo ? (
-            <img src={student.photo} className="w-32 h-32 rounded-4xl object-cover border-4 border-slate-900 shadow-2xl ring-2 ring-indigo-500/20" alt="" />
+          {currentStudent.image ? (
+            <img src={currentStudent.image} className="w-32 h-32 rounded-4xl object-cover border-4 border-slate-900 shadow-2xl ring-2 ring-indigo-500/20" alt="" />
           ) : (
             <div className="w-32 h-32 rounded-4xl bg-slate-900 border-4 border-slate-800 flex items-center justify-center text-3xl font-black text-indigo-400 italic shadow-2xl ring-2 ring-indigo-500/20">
               {initials}
@@ -81,15 +113,15 @@ export const StudentProfile = () => {
 
         <div className="flex-1 text-center md:text-left relative z-10">
           <div className="flex items-center justify-center md:justify-start gap-4 mb-2">
-            <h1 className="text-4xl font-bold text-white tracking-tight italic leading-none truncate">{student.name}</h1>
+            <h1 className="text-4xl font-bold text-white tracking-tight italic leading-none truncate">{currentStudent.name}</h1>
             <Badge variant="success" className="uppercase tracking-widest text-[9px]">ENROLLED</Badge>
           </div>
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-slate-500 font-bold uppercase tracking-widest text-[10px] italic">
-            <span className="flex items-center gap-2">Level {student.level}</span>
+            <span className="flex items-center gap-2">Level {currentStudent.level}</span>
             <span className="w-1.5 h-1.5 bg-slate-800 rounded-full"></span>
-            <span className="flex items-center gap-2">{course?.name}</span>
+            <span className="flex items-center gap-2">{courseName}</span>
             <span className="w-1.5 h-1.5 bg-slate-800 rounded-full"></span>
-            <span className="flex items-center gap-2">ID: {student.id.padStart(4, '0')}</span>
+            <span className="flex items-center gap-2">Matric: {currentStudent.matric_number || currentStudent.$id}</span>
           </div>
         </div>
       </div>
@@ -102,19 +134,19 @@ export const StudentProfile = () => {
                 <div className="group transition-all">
                   <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic mb-1">Guardian Identity</p>
                   <p className="text-white font-bold italic truncate flex items-center gap-2">
-                    <Mail size={14} className="text-indigo-400" /> {student.guardian_email || 'N/A'}
+                    <Mail size={14} className="text-indigo-400" /> {currentStudent.guardianEmail || currentStudent.email || 'N/A'}
                   </p>
                 </div>
                 <div>
                   <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic mb-1">Emergency Frequency</p>
                   <p className="text-white font-bold italic flex items-center gap-2">
-                    <Phone size={14} className="text-indigo-400" /> {student.emergency_contact || 'N/A'}
+                    <Phone size={14} className="text-indigo-400" /> {currentStudent.guardianPhone || currentStudent.phone_number || 'N/A'}
                   </p>
                 </div>
                 <div className="pt-6 border-t border-slate-800/50">
                   <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic mb-1">Enrolled Since</p>
                   <p className="text-white font-bold italic flex items-center gap-2">
-                    <Calendar size={14} className="text-indigo-400" /> {student.enrollment_date || 'N/A'}
+                    <Calendar size={14} className="text-indigo-400" /> {currentStudent.enrollment_date || currentStudent.$createdAt || 'N/A'}
                   </p>
                 </div>
              </div>
@@ -140,7 +172,7 @@ export const StudentProfile = () => {
           <Card 
             title="Attendance Summary" 
             subtitle="Deep-learning presence persistence visualization"
-            action={<span className="text-2xl font-black text-indigo-400 italic tracking-tighter">{student.attendance_rate}% <span className="text-[10px] text-slate-600 uppercase tracking-widest block text-right mt-1">Institutional Rate</span></span>}
+            action={<span className="text-2xl font-black text-indigo-400 italic tracking-tighter">{currentStudent.attendance_rate || 0}% <span className="text-[10px] text-slate-600 uppercase tracking-widest block text-right mt-1">Institutional Rate</span></span>}
           >
             <div className="h-[280px] mt-8">
               <ResponsiveContainer width="100%" height="100%">

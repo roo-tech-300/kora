@@ -88,6 +88,30 @@ export const getStudents = async () => {
     }
 }
 
+export const getStudentById = async (studentId: string) => {
+    const cacheKey = `students:detail:${studentId}`;
+    try {
+        if (isOffline()) {
+            const cached = readCache<any>(cacheKey);
+            return cached?.value || null;
+        }
+
+        const student = await databases.getRow(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            import.meta.env.VITE_APPWRITE_STUDENTS_TABLE_ID,
+            studentId
+        );
+
+        if (student) writeCache(cacheKey, student);
+        return student;
+    } catch (error) {
+        const cached = readCache<any>(cacheKey);
+        if (cached) return cached.value;
+        console.log(`Error getting student by id: ${error}`);
+        throw error;
+    }
+}
+
 export const enrollStudentInCourse = async (studentId: string, courseId: string) => {
     try {
         await databases.createRow(

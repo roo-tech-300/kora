@@ -319,7 +319,7 @@ export const AddStudent = () => {
 
     try {
       setIsSubmitting(true);
-      await createStudent(
+      const student = await createStudent(
         fullName,
         matricNumber,
         level,
@@ -336,7 +336,7 @@ export const AddStudent = () => {
       );
 
       if (enrollFingerprint) {
-        navigate('/admin/students/1/enroll');
+        navigate(`/admin/students/${student.$id}/enroll`);
       } else {
         navigate('/admin/students');
       }

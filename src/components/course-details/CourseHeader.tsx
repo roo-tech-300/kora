@@ -93,7 +93,7 @@ export const CourseHeader = ({
                   onClick={onStartSession}
                   className="h-10 px-5 bg-indigo-600 rounded-xl text-xs font-black text-white hover:bg-indigo-500 transition-all flex items-center gap-2 uppercase tracking-tighter italic shadow-lg shadow-indigo-900/20 active:scale-95"
                 >
-                  <PlayCircle size={14} /> Start Session
+                  <PlayCircle size={14} /> Start Session  
                 </button>
               )
             )}

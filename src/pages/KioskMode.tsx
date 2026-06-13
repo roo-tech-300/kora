@@ -5,6 +5,7 @@ import { Badge, cn } from '../components/Common';
 import { getCourseById } from '../lib/apis/courses/courses';
 import { createClassRecord, findExistingClassInstances } from '../lib/apis/courses/classes';
 import { getZonedCurrentMinutes, getZonedDateIso, getZonedDayIndex, getZonedCurrentTime } from '../lib/time/sessionClock';
+import { identifyFingerprint } from '../lib/scanner/enroll';
 
 const WEEKLY_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -278,22 +279,24 @@ export const KioskMode = () => {
                         ? 'border-rose-500 bg-rose-500/5 animate-shake'
                         : 'border-slate-800 bg-slate-900/40 hover:border-slate-700 hover:scale-[1.02] backdrop-blur-md'
                 )}
-                onClick={() => {
+                onClick={async () => {
                   if (scanState !== 'idle') return;
                   setScanState('scanning');
-                  setTimeout(() => {
-                    const success = Math.random() > 0.1;
-                    if (success) {
-                      setScannedStudent({ name: 'Verified Student' });
+                  try {
+                    const data = await identifyFingerprint();
+                    if (data.success && data.match) {
+                      setScannedStudent({ name: data.match.file.replace('.xyt', '') });
                       setScanState('success');
                     } else {
                       setScanState('error');
                     }
-                    setTimeout(() => {
-                      setScanState('idle');
-                      setScannedStudent(null);
-                    }, 2500);
-                  }, 1200);
+                  } catch {
+                    setScanState('error');
+                  }
+                  setTimeout(() => {
+                    setScanState('idle');
+                    setScannedStudent(null);
+                  }, 2500);
                 }}
               >
                 <div className="relative">
@@ -316,12 +319,12 @@ export const KioskMode = () => {
                 </p>
                 <p className="mt-3 text-slate-500 font-bold uppercase tracking-widest italic text-[10px]">
                   {scanState === 'idle'
-                    ? 'Place finger on optical sensor'
+                    ? 'Place finger on scanner'
                     : scanState === 'scanning'
-                      ? 'Keep finger steady for depth scan'
+                      ? 'Hold finger steady...'
                       : scanState === 'success'
-                        ? 'Attendance logged to node'
-                        : 'Please re-align and retry'}
+                        ? 'Attendance logged'
+                        : 'No match — try again'}
                 </p>
               </div>
             </div>

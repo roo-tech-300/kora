@@ -1,14 +1,15 @@
-export type AttendanceSyncStatus = 'pending' | 'synced' | 'failed';
+export type ClassSessionActionType = 'start' | 'end';
+export type ClassSessionSyncStatus = 'pending' | 'synced' | 'failed';
 
-export type AttendanceQueueItem = {
+export type ClassSessionQueueItem = {
   id: string;
+  action: ClassSessionActionType;
   course: string;
   timetable: string;
   date: string;
-  studentId?: string;
-  classStatus: 'Done' | 'Pending' | 'Undone';
-  payload: Record<string, any>;
-  status: AttendanceSyncStatus;
+  time: string;
+  recordId?: string;
+  status: ClassSessionSyncStatus;
   createdAt: number;
   updatedAt: number;
   error?: string;
@@ -16,8 +17,7 @@ export type AttendanceQueueItem = {
 
 const DB_NAME = 'kora-offline';
 const DB_VERSION = 2;
-const STORE_NAME = 'attendance_outbox';
-const SESSION_STORE_NAME = 'class_session_queue';
+const STORE_NAME = 'class_session_queue';
 
 const openDatabase = () => {
   if (!('indexedDB' in window)) {
@@ -30,15 +30,15 @@ const openDatabase = () => {
     request.onupgradeneeded = () => {
       const db = request.result;
 
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('attendance_outbox')) {
+        const store = db.createObjectStore('attendance_outbox', { keyPath: 'id' });
         store.createIndex('status', 'status', { unique: false });
         store.createIndex('course', 'course', { unique: false });
         store.createIndex('date', 'date', { unique: false });
       }
 
-      if (!db.objectStoreNames.contains(SESSION_STORE_NAME)) {
-        const store = db.createObjectStore(SESSION_STORE_NAME, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
         store.createIndex('status', 'status', { unique: false });
         store.createIndex('course', 'course', { unique: false });
       }
@@ -67,13 +67,9 @@ const withStore = async <T>(
   });
 };
 
-export const buildAttendanceItemId = (course: string, timetable: string, date: string, studentId = '') => {
-  return `${course}::${timetable}::${date}::${studentId}`;
-};
-
-export const queueAttendanceRecord = async (item: Omit<AttendanceQueueItem, 'createdAt' | 'updatedAt' | 'status'>) => {
+export const queueClassSessionAction = async (item: Omit<ClassSessionQueueItem, 'createdAt' | 'updatedAt' | 'status'>) => {
   const now = Date.now();
-  const record: AttendanceQueueItem = {
+  const record: ClassSessionQueueItem = {
     ...item,
     status: 'pending',
     createdAt: now,
@@ -83,31 +79,36 @@ export const queueAttendanceRecord = async (item: Omit<AttendanceQueueItem, 'cre
   return withStore('readwrite', (store) => store.put(record));
 };
 
-export const getQueuedAttendanceRecords = async () => {
-  return withStore<AttendanceQueueItem[]>('readonly', (store) => store.getAll());
+export const getQueuedClassSessionActions = async () => {
+  return withStore<ClassSessionQueueItem[]>('readonly', (store) => store.getAll());
 };
 
-export const updateAttendanceRecordStatus = async (
+export const getPendingClassSessionActions = async () => {
+  const all = await getQueuedClassSessionActions();
+  return all.filter(item => item.status === 'pending');
+};
+
+export const updateClassSessionActionStatus = async (
   id: string,
-  status: AttendanceSyncStatus,
+  status: ClassSessionSyncStatus,
   error?: string
 ) => {
   const db = await openDatabase();
 
-  return new Promise<AttendanceQueueItem | undefined>((resolve, reject) => {
+  return new Promise<ClassSessionQueueItem | undefined>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
     const getRequest = store.get(id);
 
     getRequest.onsuccess = () => {
-      const existing = getRequest.result as AttendanceQueueItem | undefined;
+      const existing = getRequest.result as ClassSessionQueueItem | undefined;
       if (!existing) {
         resolve(undefined);
         db.close();
         return;
       }
 
-      const updated: AttendanceQueueItem = {
+      const updated: ClassSessionQueueItem = {
         ...existing,
         status,
         error,
@@ -116,15 +117,15 @@ export const updateAttendanceRecordStatus = async (
 
       const putRequest = store.put(updated);
       putRequest.onsuccess = () => resolve(updated);
-      putRequest.onerror = () => reject(putRequest.error || new Error('Failed to update attendance status.'));
+      putRequest.onerror = () => reject(putRequest.error || new Error('Failed to update session action status.'));
     };
 
-    getRequest.onerror = () => reject(getRequest.error || new Error('Failed to load attendance record.'));
+    getRequest.onerror = () => reject(getRequest.error || new Error('Failed to load session action.'));
     tx.oncomplete = () => db.close();
-    tx.onerror = () => reject(tx.error || new Error('Failed to update attendance queue.'));
+    tx.onerror = () => reject(tx.error || new Error('Failed to update session action queue.'));
   });
 };
 
-export const removeAttendanceRecord = async (id: string) => {
+export const removeClassSessionAction = async (id: string) => {
   return withStore('readwrite', (store) => store.delete(id));
 };

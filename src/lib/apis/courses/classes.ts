@@ -69,12 +69,12 @@ export const findMissingClassInstances = async (course: string, instances: Class
   return instances.filter((instance) => !existingKeys.has(instanceKey(instance)));
 };
 
-export const createClassRecord = async (data: ClassInstance) => {
+export const createClassRecord = async (data: ClassInstance, customId?: string) => {
   try {
     const record = await databases.createRow(
       import.meta.env.VITE_APPWRITE_DATABASE_ID,
       import.meta.env.VITE_APPWRITE_CLASSES_TABLE_ID,
-      ID.unique(),
+      customId ? ID.custom(customId) : ID.unique(),
       {
         course: data.course,
         timetable: data.timetable,

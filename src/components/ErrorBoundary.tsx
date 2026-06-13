@@ -6,7 +6,7 @@ interface Props {
   children?: ReactNode;
 }
 
-interface State {
+interface State {  
   hasError: boolean;
   error?: Error;
 }

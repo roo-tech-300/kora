@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Loader } from 'lucide-react';
 import { cn, Card, Badge } from '../components/Common';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,13 @@ import { getInstitutionUsers } from '../lib/apis/auth/getInstitutionUsers';
 import { getStudentsInCourse } from '../lib/apis/students/students';
 import { getZonedCurrentMinutes, getZonedDateIso, getZonedDayIndex, getZonedCurrentTime } from '../lib/time/sessionClock';
 import { useOffline } from '../context/OfflineContext';
+import { readCache, writeCache } from '../lib/localCache/offlineCache';
+import {
+  queueClassSessionAction,
+  getPendingClassSessionActions,
+  removeClassSessionAction,
+  updateClassSessionActionStatus,
+} from '../lib/offline/classSessionQueue';
 
 // Modular components
 import { CourseHeader } from '../components/course-details/CourseHeader';
@@ -243,6 +250,7 @@ export const CourseDetails = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [allRecords, setAllRecords] = useState<any[]>([]);
+  const isSyncingRef = useRef(false);
   const [activeTab, setActiveTab] = useState<CourseTab>('overview');
 
   // Modal states
@@ -289,6 +297,84 @@ export const CourseDetails = () => {
     };
     loadRecords();
   }, [course]);
+
+  const processPendingSessionActions = async (courseId: string) => {
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
+
+    try {
+      const pending = await getPendingClassSessionActions();
+      const courseActions = pending
+        .filter(item => item.course === courseId)
+        .sort((a, b) => a.createdAt - b.createdAt);
+      if (courseActions.length === 0) return;
+
+      for (const item of courseActions) {
+        try {
+          if (item.action === 'start') {
+            await createClassRecord({
+              course: item.course,
+              timetable: item.timetable,
+              date: item.date,
+              time: item.time,
+            }, item.recordId);
+          } else if (item.action === 'end') {
+            let updated = false;
+
+            if (item.recordId) {
+              try {
+                await updateClassRecord(item.recordId, { status: 'Done' });
+                updated = true;
+              } catch {
+                // Record not found, fall through
+              }
+            }
+
+            if (!updated) {
+              const records = await getClassRecordsForCourse(item.course);
+              const existing = records.find(r =>
+                (r.timetable || '') === (item.timetable || '') && r.date === item.date
+              );
+              if (existing) {
+                await updateClassRecord(existing.$id, { status: 'Done' });
+              } else {
+                await databases.createRow(
+                  import.meta.env.VITE_APPWRITE_DATABASE_ID,
+                  import.meta.env.VITE_APPWRITE_CLASSES_TABLE_ID,
+                  ID.unique(),
+                  {
+                    course: item.course,
+                    timetable: item.timetable || '',
+                    date: item.date,
+                    time: item.time,
+                    status: 'Done',
+                  }
+                );
+              }
+            }
+          }
+
+          await removeClassSessionAction(item.id);
+        } catch (err) {
+          console.error(`Failed to sync session action ${item.id}:`, err);
+          await updateClassSessionActionStatus(item.id, 'failed', String(err));
+        }
+      }
+
+      const records = await getClassRecordsForCourse(courseId);
+      setAllRecords(records);
+    } catch (err) {
+      console.error('Failed to process pending session actions:', err);
+    } finally {
+      isSyncingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (!offline && course) {
+      processPendingSessionActions(course.$id);
+    }
+  }, [offline, course]);
 
   // Sync edit form when course or modal state changes
   useEffect(() => {
@@ -434,10 +520,10 @@ export const CourseDetails = () => {
     if (!course) return;
     const dateIso = getZonedDateIso();
     const time = getZonedCurrentTime();
+    const sessionId = crypto.randomUUID();
 
-    const previousRecords = [...allRecords];
     const optimisticRecord = {
-      $id: `temp-${Date.now()}`,
+      $id: sessionId,
       course: course.$id,
       timetable: '',
       date: dateIso,
@@ -447,31 +533,51 @@ export const CourseDetails = () => {
 
     setAllRecords(prev => [...prev, optimisticRecord]);
 
+    if (offline) {
+      await queueClassSessionAction({
+        id: `session-${Date.now()}`,
+        action: 'start',
+        course: course.$id,
+        timetable: '',
+        date: dateIso,
+        time: time,
+        recordId: sessionId,
+      });
+
+      const cacheKey = `classes:course:${course.$id}`;
+      const cached = readCache<any[]>(cacheKey);
+      if (cached) {
+        writeCache(cacheKey, [...cached.value, optimisticRecord]);
+      }
+      return;
+    }
+
     try {
       await createClassRecord({
         course: course.$id,
         timetable: '',
         date: dateIso,
         time: time,
-      });
+      }, sessionId);
+
       const records = await getClassRecordsForCourse(course.$id);
       setAllRecords(records);
     } catch (err) {
       console.error('Failed to start unscheduled session', err);
-      setAllRecords(previousRecords);
+      setAllRecords(prev => prev.filter(r => r.$id !== optimisticRecord.$id));
     }
   };
 
   const handleEndSession = async () => {
     if (!currentSession) return;
-    const previousRecords = [...allRecords];
+    const endSessionId = crypto.randomUUID();
 
     setAllRecords(prev => {
       if (currentSession.$id) {
         return prev.map(r => r.$id === currentSession.$id ? { ...r, status: 'Done' } : r);
       } else {
         const newRecord = {
-          $id: `temp-end-${Date.now()}`,
+          $id: endSessionId,
           course: currentSession.course,
           timetable: currentSession.timetable,
           date: currentSession.date,
@@ -481,6 +587,31 @@ export const CourseDetails = () => {
         return [...prev, newRecord];
       }
     });
+
+    const hasRealRecordId = !currentSession.isScheduled && !!currentSession.$id;
+    const isScheduledSession = currentSession.isScheduled === true;
+
+    if (offline) {
+      await queueClassSessionAction({
+        id: `session-${Date.now()}`,
+        action: 'end',
+        course: currentSession.course,
+        timetable: isScheduledSession ? currentSession.$id : (currentSession.timetable || ''),
+        date: currentSession.date,
+        time: currentSession.start || currentSession.time || '',
+        recordId: hasRealRecordId ? currentSession.$id : undefined,
+   });
+
+      const cacheKey = `classes:course:${course.$id}`;
+      const cached = readCache<any[]>(cacheKey);
+      if (cached) {
+        const updated = cached.value.map(r =>
+          r.$id === currentSession.$id ? { ...r, status: 'Done' } : r
+        );
+        writeCache(cacheKey, updated);
+      }
+      return;
+    }
 
     try {
       if (currentSession.$id) {
@@ -503,7 +634,13 @@ export const CourseDetails = () => {
       setAllRecords(records);
     } catch (err) {
       console.error('Failed to end session', err);
-      setAllRecords(previousRecords);
+      setAllRecords(prev => {
+        if (currentSession.$id) {
+          return prev.map(r => r.$id === currentSession.$id ? { ...r, status: 'Pending' } : r);
+        } else {
+          return prev.filter(r => r.$id !== endSessionId);
+        }
+      });
     }
   };
 
